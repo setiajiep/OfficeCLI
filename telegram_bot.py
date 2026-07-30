@@ -1106,10 +1106,32 @@ def process_callback_query(cq):
             answer_callback_query(cq_id, "Ketik nama folder baru...")
             force_reply = {"force_reply": True, "selective": True}
             send_message(chat_id, f"📁 BUAT FOLDER BARU\n\nKetik nama folder baru yang ingin dibuat di {current_cwd}:", reply_markup=force_reply)
-        elif action == "create_file_prompt":
-            answer_callback_query(cq_id, "Ketik nama file baru...")
-            force_reply = {"force_reply": True, "selective": True}
-            send_message(chat_id, f"📝 BUAT FILE BARU\n\nKetik nama file baru yang ingin dibuat di {current_cwd} (misal: laporan.docx atau data.xlsx):", reply_markup=force_reply)
+def setup_bot_commands():
+    commands = [
+        {"command": "start", "description": "🚀 Dashboard & Menu Utama"},
+        {"command": "menu", "description": "📱 Tombol Menu Keyboard Serba Bisa"},
+        {"command": "fm", "description": "📂 File Manager Interaktif"},
+        {"command": "status", "description": "📊 Status VPS (RAM, CPU, Disk)"},
+        {"command": "chart", "description": "📈 Chart Analytics Visual VPS"},
+        {"command": "top", "description": "⚡ Process Manager & Terminate PID"},
+        {"command": "services", "description": "🛠️ Service Systemd Monitor"},
+        {"command": "web", "description": "🌐 Scraper & Reader Halaman Web"},
+        {"command": "backup", "description": "📦 Backup VPS ke GitHub & Telegram"},
+        {"command": "help", "description": "❓ Panduan & Cara Penggunaan"}
+    ]
+    api_request("setMyCommands", {"commands": commands})
+
+def get_main_menu_keyboard():
+    return {
+        "keyboard": [
+            [{"text": "📂 File Manager"}, {"text": "📊 Status VPS"}],
+            [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
+            [{"text": "🛠️ Services"}, {"text": "📦 Backup VPS"}],
+            [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}]
+        ],
+        "resize_keyboard": True,
+        "is_persistent": True
+    }
 
 def process_update(update):
     if "callback_query" in update:
@@ -1400,12 +1422,22 @@ def process_update(update):
 
     text = message["text"].strip()
 
-    if text in ["/start", "/fm", "/ls", "/browse"]:
+    if text in ["/start", "/menu", "📱 Tombol Menu"]:
+        menu_text = (
+            "📱 *TELGRAM BOT SERBA BISA CONTROLLER*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "Selamat datang! Gunakan **Tombol Menu** di bawah untuk mengakses semua fitur VPS & AI secara langsung dengan sekali tap.\n\n"
+            "💡 *Tip:* Anda juga bisa mengirim pesan suara (*Voice Note*) untuk perintah AI otomatis!"
+        )
+        send_message(chat_id, menu_text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
+        return
+
+    if text in ["/fm", "/ls", "/browse", "📂 File Manager"]:
         msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
         send_message(chat_id, msg_text, reply_markup=reply_markup)
         return
 
-    if text in ["/status", "/sys", "/vps"]:
+    if text in ["/status", "/sys", "/vps", "📊 Status VPS"]:
         st = get_system_status()
         status_text = (
             "📊 *REAL-TIME VPS SYSTEM DASHBOARD*\n"
@@ -1421,7 +1453,7 @@ def process_update(update):
         send_message(chat_id, status_text, parse_mode="Markdown")
         return
 
-    if text in ["/chart", "/syschart"]:
+    if text in ["/chart", "/syschart", "📈 Chart VPS"]:
         send_message(chat_id, "📈 Sedang membuat chart analytics VPS...")
         chart_file = generate_system_chart()
         if chart_file and os.path.exists(chart_file):
@@ -1430,7 +1462,7 @@ def process_update(update):
             send_message(chat_id, "❌ Gagal membuat chart visual.")
         return
 
-    if text in ["/top", "/ps", "/procs"]:
+    if text in ["/top", "/ps", "/procs", "⚡ Top Processes"]:
         procs = get_top_processes(limit=8)
         msg = "⚡ *PROCESS MANAGER (TOP MEMORY & CPU)*\n━━━━━━━━━━━━━━━━━━━━━\n"
         btn_rows = []
@@ -1442,12 +1474,21 @@ def process_update(update):
         send_message(chat_id, msg, reply_markup={"inline_keyboard": btn_rows}, parse_mode="Markdown")
         return
 
-    if text in ["/services", "/service"]:
+    if text in ["/services", "/service", "🛠️ Services"]:
         svcs = get_services_status()
         msg = "🛠️ *SYSTEM SERVICES STATUS*\n━━━━━━━━━━━━━━━━━━━━━\n"
         for s in svcs:
             msg += f"• *{s['name']}*: {s['icon']} (`{s['state']}`)\n"
         send_message(chat_id, msg, parse_mode="Markdown")
+        return
+
+    if text in ["/backup", "/backupvps", "📦 Backup VPS"]:
+        send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
+        subprocess.Popen(["/root/backup_vps.sh"], cwd="/root")
+        return
+
+    if text == "🌐 Web Reader":
+        send_message(chat_id, "🌐 *PEMBACA HALAMAN WEB*\n\nSilakan ketik URL yang ingin dibaca dengan format:\n`/web https://google.com`", parse_mode="Markdown")
         return
 
     if text.startswith("/web "):
@@ -1647,6 +1688,8 @@ def process_update(update):
 def main():
     print("🚀 Antigravity Telegram Office & Photo Editor Active...")
     print("Bot Username: @Kontrolagybot")
+
+    setup_bot_commands()
 
     offset = 0
     while True:
