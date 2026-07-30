@@ -1117,6 +1117,7 @@ def setup_bot_commands():
         {"command": "services", "description": "🛠️ Service Systemd Monitor"},
         {"command": "web", "description": "🌐 Scraper & Reader Halaman Web"},
         {"command": "backup", "description": "📦 Backup VPS ke GitHub & Telegram"},
+        {"command": "closemenu", "description": "🙈 Sembunyikan Tombol Menu Keyboard"},
         {"command": "help", "description": "❓ Panduan & Cara Penggunaan"}
     ]
     api_request("setMyCommands", {"commands": commands})
@@ -1127,7 +1128,8 @@ def get_main_menu_keyboard():
             [{"text": "📂 File Manager"}, {"text": "📊 Status VPS"}],
             [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
             [{"text": "🛠️ Services"}, {"text": "📦 Backup VPS"}],
-            [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}]
+            [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}],
+            [{"text": "🙈 Sembunyikan Menu"}]
         ],
         "resize_keyboard": True,
         "is_persistent": True
@@ -1430,6 +1432,15 @@ def process_update(update):
             "💡 *Tip:* Anda juga bisa mengirim pesan suara (*Voice Note*) untuk perintah AI otomatis!"
         )
         send_message(chat_id, menu_text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
+        return
+
+    if text in ["/closemenu", "/hidemenu", "/close", "🙈 Sembunyikan Menu"]:
+        send_message(
+            chat_id,
+            "🙈 Tombol menu keyboard disembunyikan.\n\n💡 Ketik `/menu` kapan saja untuk memunculkan kembali tombol menu.",
+            reply_markup={"remove_keyboard": True},
+            parse_mode="Markdown"
+        )
         return
 
     if text in ["/fm", "/ls", "/browse", "📂 File Manager"]:
