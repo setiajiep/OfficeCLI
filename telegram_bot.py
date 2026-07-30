@@ -14,6 +14,7 @@ TOKEN = "8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE"
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
 AGY_BIN = "/root/.local/bin/agy"
 OFFICE_TOOLS = "/root/office_tools.py"
+IMAGE_TOOLS = "/root/image_tools.py"
 
 STATE_FILE = "/root/.antigravity_bot_state.json"
 FILES_PER_PAGE = 8
@@ -169,7 +170,7 @@ def send_document(chat_id, file_path, caption=None):
     except Exception as e:
         send_message(chat_id, f"❌ Gagal mengirim document: {e}")
 
-SYSTEM_FILES = ["telegram_bot.py", "office_tools.py", "setup.sh", "backup_vps.sh", "git_backup.sh", "restore.sh", "antigravity-bot.service"]
+SYSTEM_FILES = ["telegram_bot.py", "office_tools.py", "image_tools.py", "setup.sh", "backup_vps.sh", "git_backup.sh", "restore.sh", "antigravity-bot.service"]
 
 def render_file_manager(user_id, current_dir, page=1, notice=None):
     current_dir = os.path.abspath(current_dir)
@@ -180,7 +181,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     show_hidden = get_show_hidden(user_id)
 
     rel_path = current_dir.replace("/root", "~")
-    text = f"🏢 OFFICE CLI & PROJECT MANAGER\n"
+    text = f"🏢 OFFICE CLI & PHOTO SUITE MANAGER\n"
     text += f"━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"📍 Path: {rel_path}\n"
     if notice:
@@ -229,7 +230,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     else:
         text += "_Tidak ada folder_\n"
 
-    text += f"\n📄 Dokumen & File ({total_files}) - Halaman {page}/{total_pages}:\n"
+    text += f"\n📄 Dokumen & Foto ({total_files}) - Halaman {page}/{total_pages}:\n"
     if page_files:
         for fl_name in page_files:
             ext = os.path.splitext(fl_name)[1].lower()
@@ -238,7 +239,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
             elif ext in [".docx", ".doc"]: icon = "📘"
             elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
             elif ext in [".pptx", ".ppt"]: icon = "📙"
-            elif ext in [".png", ".jpg", ".jpeg"]: icon = "🖼️"
+            elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]: icon = "🖼️"
 
             try:
                 sz = os.path.getsize(os.path.join(current_dir, fl_name)) / 1024
@@ -296,7 +297,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         elif ext in [".docx", ".doc"]: icon = "📘"
         elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
         elif ext in [".pptx", ".ppt"]: icon = "📙"
-        elif ext in [".png", ".jpg", ".jpeg"]: icon = "🖼️"
+        elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]: icon = "🖼️"
 
         btn_text = f"{icon} {item[:16]}"
         file_row.append({"text": btn_text, "callback_data": f"fm_file:{fl_key}"})
@@ -315,7 +316,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
             pag_row.append({"text": "Next ▶️", "callback_data": f"fm_cd:{dir_key}:{page+1}"})
         inline_keyboard.append(pag_row)
 
-    text += "\n💡 Tip: Upload dokumen Word/Excel/PDF/Gambar Tanda Tangan dengan caption instruksi!"
+    text += "\n💡 Tip: Upload Foto / Dokumen dengan caption instruksi edit!"
 
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
@@ -353,7 +354,7 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         clean_out = clean_ai_output(output)
 
         rel_dir = work_dir.replace("/root", "~")
-        result_header = f"🤖 OFFICE AI EXECUTION\n📍 Path: {rel_dir}\n💬 Prompt: {prompt}\n━━━━━━━━━━━━━━━━━━━━━\n\n"
+        result_header = f"🤖 OFFICE & PHOTO AI EXECUTION\n📍 Path: {rel_dir}\n💬 Prompt: {prompt}\n━━━━━━━━━━━━━━━━━━━━━\n\n"
         full_output = result_header + clean_out
         
         edit_message(chat_id, status_msg_id, full_output)
@@ -378,17 +379,17 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
                 full_fpath = os.path.join(work_dir, fname)
                 if full_fpath not in sent_files:
                     sent_files.add(full_fpath)
-                    send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen: {fname}")
+                    send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen/Foto: {fname}")
 
         # 2. Extract and send files mentioned directly in AGY output text
-        matches = re.findall(r'(?:/root/[^\s\)\"\'>]+|[a-zA-Z0-9_\-\.]+\.(?:pdf|docx|xlsx|pptx|png|jpg|txt))', output)
+        matches = re.findall(r'(?:/root/[^\s\)\"\'>]+|[a-zA-Z0-9_\-\.]+\.(?:pdf|docx|xlsx|pptx|png|jpg|jpeg|webp|txt))', output)
         for m in matches:
             clean_m = m.rstrip(".,;:)")
             target_f = clean_m if clean_m.startswith("/") else os.path.join(work_dir, clean_m)
             if os.path.exists(target_f) and os.path.isfile(target_f):
                 if target_f not in sent_files and os.path.basename(target_f) not in SYSTEM_FILES:
                     sent_files.add(target_f)
-                    send_document(chat_id, target_f, caption=f"📄 Dokumen Terkait: {os.path.basename(target_f)}")
+                    send_document(chat_id, target_f, caption=f"📄 Dokumen/Foto Terkait: {os.path.basename(target_f)}")
 
         # 3. If user explicitly asked "kirim file" or "kirim filenya", send all recent files in work_dir!
         if any(kw in prompt.lower() for kw in ["kirim file", "kirimkan file", "kirim filenya", "send file"]):
@@ -398,7 +399,7 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
                 full_fpath = os.path.join(work_dir, fname)
                 if os.path.isfile(full_fpath) and full_fpath not in sent_files:
                     sent_files.add(full_fpath)
-                    send_document(chat_id, full_fpath, caption=f"📄 Dokumen: {fname}")
+                    send_document(chat_id, full_fpath, caption=f"📄 Dokumen/Foto: {fname}")
 
     except subprocess.TimeoutExpired:
         process.kill()
@@ -467,33 +468,123 @@ def process_callback_query(cq):
             size_kb = stat.st_size / 1024
             mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
             
-            text = f"📄 OFFICE DOKUMEN: {file_name}\n"
+            is_image = ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
+            header_title = "🖼️ PHOTO / GAMBAR EDITOR" if is_image else "📄 OFFICE DOKUMEN"
+
+            text = f"{header_title}: {file_name}\n"
             text += f"━━━━━━━━━━━━━━━━━━━━━\n"
             text += f"📌 Nama: {file_name}\n"
             text += f"📍 Path: {file_path}\n"
             text += f"📊 Ukuran: {size_kb:.2f} KB\n"
             text += f"🕒 Modifikasi: {mtime}\n\n"
             
-            try:
-                res = subprocess.run(["python3", OFFICE_TOOLS, "extract_text", file_path], capture_output=True, text=True)
-                snippet = res.stdout[:1200] if res.stdout else "Gagal mengekstrak teks."
-                snippet_clean = clean_ai_output(snippet)
-                text += f"📝 Pratinjau Isi Teks:\n{snippet_clean}"
-            except Exception as e:
-                text += f"⚠️ Tidak dapat membaca isi file: {e}"
+            if is_image:
+                try:
+                    res = subprocess.run(["python3", "-c", f"from PIL import Image; img=Image.open('{file_path}'); print(f'Resolusi: {{img.size[0]}}x{{img.size[1]}} | Mode: {{img.mode}}')"], capture_output=True, text=True)
+                    text += f"📐 {res.stdout.strip()}\n"
+                except Exception:
+                    pass
 
             btn_list = []
-            if ext == ".pdf" or file_name.lower().startswith("doc-"):
-                btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
-            if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
-                btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
-            btn_list.append([{"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"}])
+            if is_image:
+                btn_list.append([
+                    {"text": "🔄 Rotate 90°", "callback_data": f"img_action:rotate:{fl_key}"},
+                    {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"}
+                ])
+                btn_list.append([
+                    {"text": "🎨 Grayscale", "callback_data": f"img_action:filter_grayscale:{fl_key}"},
+                    {"text": "📜 Sepia", "callback_data": f"img_action:filter_sepia:{fl_key}"},
+                    {"text": "🎞️ Vintage", "callback_data": f"img_action:filter_vintage:{fl_key}"}
+                ])
+                btn_list.append([
+                    {"text": "🏷️ Add Watermark", "callback_data": f"img_action:wm_prompt:{fl_key}"},
+                    {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"}
+                ])
+                btn_list.append([
+                    {"text": "🔄 Convert ke PNG", "callback_data": f"img_action:conv_png:{fl_key}"},
+                    {"text": "📕 Convert ke PDF", "callback_data": f"img_action:conv_pdf:{fl_key}"}
+                ])
+            else:
+                if ext == ".pdf" or file_name.lower().startswith("doc-"):
+                    btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
+                if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
+                    btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
+                btn_list.append([{"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"}])
+
             btn_list.append([{"text": "📥 Download File", "callback_data": f"fm_dl:{fl_key}"}])
             btn_list.append([{"text": "🗑️ Hapus File Ini", "callback_data": f"fm_rm_confirm:{fl_key}"}])
-            btn_list.append([{"text": "🔙 Kembali ke File Manager", "callback_data": f"fm_cd:{parent_key}:1"}])
+            btn_list.append([{"text": "🔙 Kembali ke Manager", "callback_data": f"fm_cd:{parent_key}:1"}])
 
             btn = {"inline_keyboard": btn_list}
             edit_message(chat_id, message_id, text, reply_markup=btn)
+
+    elif data.startswith("img_action:"):
+        parts = data.split("img_action:", 1)[1].split(":")
+        sub_action = parts[0]
+        fl_key = parts[1]
+        file_path = decode_path(fl_key)
+        file_name = os.path.basename(file_path)
+
+        if sub_action == "rotate":
+            answer_callback_query(cq_id, "🔄 Memutar gambar 90°...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "rotate", file_path, "90"], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"🔄 Hasil Rotate 90°: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal rotate: {e}")
+
+        elif sub_action == "flip":
+            answer_callback_query(cq_id, "🪞 Flip Horizontal...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "flip", file_path, "horizontal"], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"🪞 Hasil Flip: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal flip: {e}")
+
+        elif sub_action.startswith("filter_"):
+            ftype = sub_action.split("filter_", 1)[1]
+            answer_callback_query(cq_id, f"🎨 Aplikasi Filter {ftype}...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "filter", file_path, ftype], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"🎨 Filter {ftype.title()}: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal filter: {e}")
+
+        elif sub_action == "nobg":
+            answer_callback_query(cq_id, "✂️ Menghapus Background...")
+            send_message(chat_id, f"✂️ Menghapus background putih pada `{file_name}`...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "nobg", file_path], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"✂️ Hasil Tanpa Background: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal hapus background: {e}")
+
+        elif sub_action == "conv_png":
+            answer_callback_query(cq_id, "🔄 Convert ke PNG...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "convert", file_path, "png"], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"🔄 Hasil PNG: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal convert PNG: {e}")
+
+        elif sub_action == "conv_pdf":
+            answer_callback_query(cq_id, "📕 Convert Gambar ke PDF...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "convert", file_path, "pdf"], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"📕 Hasil Gambar ke PDF: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal convert PDF: {e}")
+
+        elif sub_action == "wm_prompt":
+            answer_callback_query(cq_id, "🏷️ Watermark Text")
+            force_reply = {"force_reply": True, "selective": True}
+            send_message(chat_id, f"🏷️ TAMBAHKAN WATERMARK TEKS\n\nKetik teks watermark yang ingin ditambahkan pada `{file_name}`:", reply_markup=force_reply)
 
     elif data.startswith("fm_stamp_prompt:"):
         fl_key = data.split("fm_stamp_prompt:", 1)[1]
@@ -629,7 +720,7 @@ def process_update(update):
 
     current_cwd = get_user_cwd(user_id)
 
-    # Check for ForceReply (Interactive Folder/File creation or PDF Stamping)
+    # Check for ForceReply (Interactive Folder/File creation, Watermarking, or PDF Stamping)
     reply_to = message.get("reply_to_message")
     if reply_to and "text" in reply_to:
         reply_text = reply_to["text"]
@@ -655,6 +746,21 @@ def process_update(update):
                 send_message(chat_id, msg_text, reply_markup=reply_markup)
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal membuat file: {e}")
+            return
+
+        if "TAMBAHKAN WATERMARK TEKS" in reply_text and user_input_name:
+            match = re.search(r'pada `(.*?)`:', reply_text)
+            img_filename = match.group(1) if match else None
+            if img_filename:
+                img_path = os.path.join(current_cwd, img_filename)
+                if os.path.exists(img_path):
+                    send_message(chat_id, f"🏷️ Menambahkan watermark `{user_input_name}` pada `{img_filename}`...")
+                    try:
+                        res = subprocess.run(["python3", IMAGE_TOOLS, "watermark", img_path, user_input_name], capture_output=True, text=True)
+                        out_img = res.stdout.strip().split()[-1] if res.stdout else img_path
+                        send_document(chat_id, out_img, caption=f"🏷️ Hasil Watermark: {os.path.basename(out_img)}")
+                    except Exception as e:
+                        send_message(chat_id, f"❌ Gagal watermark: {e}")
             return
 
         if "TEMPEL TANDA TANGAN" in reply_text:
@@ -686,7 +792,7 @@ def process_update(update):
                     send_message(chat_id, f"❌ Gambar tanda tangan `{user_input_name}` tidak ditemukan di `{current_cwd}`.")
             return
 
-    # Handle Photo/Image Uploads
+    # Handle Photo/Image Uploads (with optional Caption Instruction!)
     if "photo" in message:
         photo = message["photo"][-1]
         file_id = photo["file_id"]
@@ -702,15 +808,36 @@ def process_update(update):
                 urllib.request.urlretrieve(dl_url, target_path)
 
                 if caption_text:
-                    full_prompt = f"Gambar '{img_filename}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan olah gambar atau tempelkan gambar ini ke PDF sesuai instruksi."
-                    res_msg = send_message(chat_id, f"🤖 Antigravity memproses gambar {img_filename}...\n💬 Instruksi: {caption_text}")
+                    full_prompt = f"Gambar '{img_filename}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan olah/edit gambar ini sesuai instruksi."
+                    res_msg = send_message(chat_id, f"🤖 Antigravity memproses & mengedit foto {img_filename}...\n💬 Instruksi: {caption_text}")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
                         t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd))
                         t.start()
                     return
 
-                send_message(chat_id, f"🖼️ GAMBAR DITERIMA: `{img_filename}`\n📍 Saved to: `{target_path}`\n\n💡 Tip: Kamu bisa upload gambar tanda tangan/logo dan minta AI tempelkan ke file PDF pilihanmu!")
+                fl_key = encode_path(target_path)
+                btn_list = [
+                    [
+                        {"text": "🔄 Rotate 90°", "callback_data": f"img_action:rotate:{fl_key}"},
+                        {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"}
+                    ],
+                    [
+                        {"text": "🎨 Grayscale", "callback_data": f"img_action:filter_grayscale:{fl_key}"},
+                        {"text": "📜 Sepia", "callback_data": f"img_action:filter_sepia:{fl_key}"},
+                        {"text": "🎞️ Vintage", "callback_data": f"img_action:filter_vintage:{fl_key}"}
+                    ],
+                    [
+                        {"text": "🏷️ Add Watermark", "callback_data": f"img_action:wm_prompt:{fl_key}"},
+                        {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"}
+                    ],
+                    [
+                        {"text": "🔄 Convert ke PNG", "callback_data": f"img_action:conv_png:{fl_key}"},
+                        {"text": "📕 Convert ke PDF", "callback_data": f"img_action:conv_pdf:{fl_key}"}
+                    ]
+                ]
+                reply_markup = {"inline_keyboard": btn_list}
+                send_message(chat_id, f"🖼️ FOTO DITERIMA: `{img_filename}`\n📍 Saved to: `{target_path}`\n\n💡 Tip: Pilih aksi editor foto di bawah ini, atau beri instruksi di caption saat upload foto!", reply_markup=reply_markup)
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal mengunduh gambar: {e}")
         return
@@ -742,16 +869,34 @@ def process_update(update):
 
                 fl_key = encode_path(target_path)
                 btn_list = []
-                if ext == ".pdf" or file_name.lower().startswith("doc-"):
-                    btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
-                if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".csv"]:
-                    btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
-                btn_list.append([{"text": "🔍 Extract Text / Data", "callback_data": f"fm_extract_text:{fl_key}"}])
+                if ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]:
+                    btn_list = [
+                        [
+                            {"text": "🔄 Rotate 90°", "callback_data": f"img_action:rotate:{fl_key}"},
+                            {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"}
+                        ],
+                        [
+                            {"text": "🎨 Grayscale", "callback_data": f"img_action:filter_grayscale:{fl_key}"},
+                            {"text": "📜 Sepia", "callback_data": f"img_action:filter_sepia:{fl_key}"},
+                            {"text": "🎞️ Vintage", "callback_data": f"img_action:filter_vintage:{fl_key}"}
+                        ],
+                        [
+                            {"text": "🏷️ Add Watermark", "callback_data": f"img_action:wm_prompt:{fl_key}"},
+                            {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"}
+                        ]
+                    ]
+                else:
+                    if ext == ".pdf" or file_name.lower().startswith("doc-"):
+                        btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
+                    if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
+                        btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
+                    btn_list.append([{"text": "🔍 Extract Text / Data", "callback_data": f"fm_extract_text:{fl_key}"}])
+
                 parent_key = encode_path(current_cwd)
                 btn_list.append([{"text": "🔙 Buka di File Manager", "callback_data": f"fm_cd:{parent_key}:1"}])
 
                 reply_markup = {"inline_keyboard": btn_list}
-                send_message(chat_id, f"📥 DOKUMEN DITERIMA: {file_name}\n📍 Saved to: {target_path}\n\n💡 Tip: Kamu bisa upload dokumen sambil memberikan instruksi di Caption, atau kirim chat perintah setelah ini untuk mengedit file {file_name}.", reply_markup=reply_markup)
+                send_message(chat_id, f"📥 DOKUMEN DITERIMA: {file_name}\n📍 Saved to: {target_path}\n\n💡 Tip: Kamu bisa upload dokumen/foto sambil memberikan instruksi di Caption!", reply_markup=reply_markup)
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal mengunduh file: {e}")
         return
@@ -868,7 +1013,7 @@ def process_update(update):
             send_message(chat_id, f"❌ Exec error: {e}")
         return
 
-    # Regular prompt -> Run AGY with PDF Stamping & Automatic File Delivery!
+    # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
     res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah...\n📍 cwd: {current_cwd}")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
@@ -876,7 +1021,7 @@ def process_update(update):
         t.start()
 
 def main():
-    print("🚀 Antigravity Telegram Office CLI & Agent Active...")
+    print("🚀 Antigravity Telegram Office & Photo Editor Active...")
     print("Bot Username: @Kontrolagybot")
 
     offset = 0
