@@ -69,8 +69,9 @@ if ! grep -q '\.env' /root/.bashrc 2>/dev/null; then
     echo '[ -f ~/.env ] && export $(cat ~/.env | xargs)' >> /root/.bashrc
 fi
 
-# 10. Setup 8-Hour Auto-Backup Cron Job
-(crontab -l 2>/dev/null | grep -v 'git_backup.sh'; echo "0 */8 * * * /root/git_backup.sh >/dev/null 2>&1") | crontab -
+# 10. Setup Timezone to Asia/Jakarta (WIB) & Daily Auto-Backup Cron Job (00:00 WIB)
+timedatectl set-timezone Asia/Jakarta 2>/dev/null || ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+(crontab -l 2>/dev/null | grep -v 'git_backup.sh'; echo "0 0 * * * /root/git_backup.sh >/dev/null 2>&1") | crontab -
 systemctl enable --now cron
 
 echo ""
@@ -78,6 +79,6 @@ echo "🎉 ================================================= 🎉"
 echo "✅ VPS RESTORE & SETUP COMPLETED SUCCESSFULLY!"
 echo "🤖 Telegram Bot (@Kontrolagybot) is running live!"
 echo "🏢 Office CLI & PDF Suite is fully operational!"
-echo "⏰ 8-Hour Automatic Backup Schedule is ACTIVE!"
+echo "⏰ Daily Automatic Backup Schedule (00:00 WIB) is ACTIVE!"
 echo "⚡ Antigravity CLI (agy) & Wrangler ready to use!"
 echo "🎉 ================================================= 🎉"
