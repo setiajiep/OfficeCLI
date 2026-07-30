@@ -42,7 +42,6 @@ encode_path("/root/MyProject")
 def clean_ai_output(text):
     if not text:
         return ""
-    # Clean up raw asterisks and markdown symbols for a super clean text output
     text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
     text = re.sub(r'\*(.*?)\*', r'\1', text)
     text = re.sub(r'`(.*?)`', r'\1', text)
@@ -239,6 +238,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
             elif ext in [".docx", ".doc"]: icon = "📘"
             elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
             elif ext in [".pptx", ".ppt"]: icon = "📙"
+            elif ext in [".png", ".jpg", ".jpeg"]: icon = "🖼️"
 
             try:
                 sz = os.path.getsize(os.path.join(current_dir, fl_name)) / 1024
@@ -296,6 +296,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         elif ext in [".docx", ".doc"]: icon = "📘"
         elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
         elif ext in [".pptx", ".ppt"]: icon = "📙"
+        elif ext in [".png", ".jpg", ".jpeg"]: icon = "🖼️"
 
         btn_text = f"{icon} {item[:16]}"
         file_row.append({"text": btn_text, "callback_data": f"fm_file:{fl_key}"})
@@ -314,7 +315,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
             pag_row.append({"text": "Next ▶️", "callback_data": f"fm_cd:{dir_key}:{page+1}"})
         inline_keyboard.append(pag_row)
 
-    text += "\n💡 Tip: Upload dokumen dengan caption/instruksi, atau kirim chat perintah."
+    text += "\n💡 Tip: Upload dokumen Word/Excel/PDF/Gambar Tanda Tangan dengan caption instruksi!"
 
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
@@ -349,7 +350,6 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         output, _ = process.communicate(timeout=300)
         output = output.strip() if output else "✅ Perintah selesai dijalankan."
 
-        # Clean AI output text to remove raw asterisks and markdown clutter
         clean_out = clean_ai_output(output)
 
         rel_dir = work_dir.replace("/root", "~")
@@ -462,6 +462,8 @@ def process_callback_query(cq):
                 text += f"⚠️ Tidak dapat membaca isi file: {e}"
 
             btn_list = []
+            if ext == ".pdf":
+                btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Gambar", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
             if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
                 btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
             btn_list.append([{"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"}])
@@ -471,6 +473,14 @@ def process_callback_query(cq):
 
             btn = {"inline_keyboard": btn_list}
             edit_message(chat_id, message_id, text, reply_markup=btn)
+
+    elif data.startswith("fm_stamp_prompt:"):
+        fl_key = data.split("fm_stamp_prompt:", 1)[1]
+        file_path = decode_path(fl_key)
+        file_name = os.path.basename(file_path)
+        answer_callback_query(cq_id, "✍️ Tempel Tanda Tangan")
+        force_reply = {"force_reply": True, "selective": True}
+        send_message(chat_id, f"✍️ TEMPEL TANDA TANGAN / STEMPEL PADA PDF\n\nUpload gambar tanda tangan (PNG/JPG) atau ketik nama file gambar tanda tangan yang ada di `{current_cwd}` untuk ditempelkan pada `{file_name}`:", reply_markup=force_reply)
 
     elif data.startswith("fm_convert_pdf:"):
         fl_key = data.split("fm_convert_pdf:", 1)[1]
@@ -553,7 +563,7 @@ def process_callback_query(cq):
             state_str = "ditampilkan" if new_state else "disembunyikan"
             answer_callback_query(cq_id, f"👁️ File System {state_str}!")
             msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
-            edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup)
+            edit_message(chat_id, message_id, text, reply_markup=reply_markup)
         elif action == "do_backup":
             answer_callback_query(cq_id, "📦 Mengirim Backup VPS...")
             send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
@@ -598,7 +608,7 @@ def process_update(update):
 
     current_cwd = get_user_cwd(user_id)
 
-    # Check for ForceReply (Interactive Folder/File creation)
+    # Check for ForceReply (Interactive Folder/File creation or PDF Stamping)
     reply_to = message.get("reply_to_message")
     if reply_to and "text" in reply_to:
         reply_text = reply_to["text"]
@@ -625,6 +635,66 @@ def process_update(update):
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal membuat file: {e}")
             return
+
+        if "TEMPEL TANDA TANGAN" in reply_text:
+            # Extract PDF name from prompt message
+            match = re.search(r'pada `(.*?)`:', reply_text)
+            pdf_filename = match.group(1) if match else None
+            if pdf_filename:
+                pdf_path = os.path.join(current_cwd, pdf_filename)
+                img_path = os.path.join(current_cwd, user_input_name) if not user_input_name.startswith("/") else user_input_name
+                
+                # Check if photo was uploaded in reply
+                if "photo" in message:
+                    photo = message["photo"][-1]
+                    img_path = os.path.join(current_cwd, "signature_temp.png")
+                    res = api_request("getFile", {"file_id": photo["file_id"]})
+                    if res and res.get("ok"):
+                        urllib.request.urlretrieve(f"https://api.telegram.org/file/bot{TOKEN}/{res['result']['file_path']}", img_path)
+
+                if os.path.exists(pdf_path) and os.path.exists(img_path):
+                    send_message(chat_id, f"✍️ Menempelkan tanda tangan `{os.path.basename(img_path)}` ke `{pdf_filename}`...")
+                    try:
+                        res = subprocess.run(["python3", OFFICE_TOOLS, "stamp_pdf", pdf_path, img_path], capture_output=True, text=True)
+                        out_pdf = res.stdout.strip()
+                        if out_pdf and os.path.exists(out_pdf):
+                            send_document(chat_id, out_pdf, caption=f"✍️ Dokumen PDF Ter-Tanda Tangan: {os.path.basename(out_pdf)}")
+                        else:
+                            send_message(chat_id, f"❌ Gagal menempelkan tanda tangan: {res.stderr}")
+                    except Exception as e:
+                        send_message(chat_id, f"❌ Error penempelan tanda tangan: {e}")
+                else:
+                    send_message(chat_id, f"❌ Gambar tanda tangan `{user_input_name}` tidak ditemukan di `{current_cwd}`.")
+            return
+
+    # Handle Photo/Image Uploads
+    if "photo" in message:
+        photo = message["photo"][-1]
+        file_id = photo["file_id"]
+        caption_text = message.get("caption", "").strip()
+        img_filename = f"image_{int(time.time())}.png"
+        target_path = os.path.join(current_cwd, img_filename)
+
+        res = api_request("getFile", {"file_id": file_id})
+        if res and res.get("ok"):
+            file_rel_path = res["result"]["file_path"]
+            dl_url = f"https://api.telegram.org/file/bot{TOKEN}/{file_rel_path}"
+            try:
+                urllib.request.urlretrieve(dl_url, target_path)
+
+                if caption_text:
+                    full_prompt = f"Gambar '{img_filename}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan olah gambar atau tempelkan gambar ini ke PDF sesuai instruksi."
+                    res_msg = send_message(chat_id, f"🤖 Antigravity memproses gambar {img_filename}...\n💬 Instruksi: {caption_text}")
+                    if res_msg and len(res_msg) > 0:
+                        status_msg_id = res_msg[0]["message_id"]
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd))
+                        t.start()
+                    return
+
+                send_message(chat_id, f"🖼️ GAMBAR DITERIMA: `{img_filename}`\n📍 Saved to: `{target_path}`\n\n💡 Tip: Kamu bisa upload gambar tanda tangan/logo dan minta AI tempelkan ke file PDF pilihanmu!")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal mengunduh gambar: {e}")
+        return
 
     # Handle Document Uploads (with optional Caption Instruction!)
     if "document" in message:
@@ -653,6 +723,8 @@ def process_update(update):
 
                 fl_key = encode_path(target_path)
                 btn_list = []
+                if ext == ".pdf":
+                    btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
                 if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".csv"]:
                     btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
                 btn_list.append([{"text": "🔍 Extract Text / Data", "callback_data": f"fm_extract_text:{fl_key}"}])
@@ -777,7 +849,7 @@ def process_update(update):
             send_message(chat_id, f"❌ Exec error: {e}")
         return
 
-    # Regular prompt -> Run AGY with clean output formatting!
+    # Regular prompt -> Run AGY with PDF Stamping & Office capabilities!
     res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah...\n📍 cwd: {current_cwd}")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]

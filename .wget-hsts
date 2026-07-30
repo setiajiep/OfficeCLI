@@ -2,4 +2,4 @@
 # Edit at your own risk.
 # <hostname>	<port>	<incl. subdomains>	<created>	<max-age>
 repos.insights.digitalocean.com	0	1	1785329368	15552000
-repos-droplet.digitalocean.com	0	1	1785402069	15552000
+repos-droplet.digitalocean.com	0	1	1785413577	15552000
