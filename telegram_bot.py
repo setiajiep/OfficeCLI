@@ -39,6 +39,17 @@ def decode_path(key):
 encode_path("/root")
 encode_path("/root/MyProject")
 
+def clean_ai_output(text):
+    if not text:
+        return ""
+    # Clean up raw asterisks and markdown symbols for a super clean text output
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
+    text = re.sub(r'`(.*?)`', r'\1', text)
+    text = re.sub(r'^#{1,6}\s*(.*)$', r'📌 \1', text, flags=re.MULTILINE)
+    text = re.sub(r'^\s*[\*\-]\s+', '• ', text, flags=re.MULTILINE)
+    return text.strip()
+
 def load_state():
     if os.path.exists(STATE_FILE):
         try:
@@ -159,7 +170,6 @@ def send_document(chat_id, file_path, caption=None):
     except Exception as e:
         send_message(chat_id, f"❌ Gagal mengirim document: {e}")
 
-# High-Performance Clean Office CLI & File Manager Interface
 SYSTEM_FILES = ["telegram_bot.py", "office_tools.py", "setup.sh", "backup_vps.sh", "git_backup.sh", "restore.sh", "antigravity-bot.service"]
 
 def render_file_manager(user_id, current_dir, page=1, notice=None):
@@ -170,7 +180,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     dir_key = encode_path(current_dir)
     show_hidden = get_show_hidden(user_id)
 
-    # Format display header
     rel_path = current_dir.replace("/root", "~")
     text = f"🏢 OFFICE CLI & PROJECT MANAGER\n"
     text += f"━━━━━━━━━━━━━━━━━━━━━\n"
@@ -184,7 +193,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     try:
         raw_items = os.listdir(current_dir)
         for name in raw_items:
-            # Filter out hidden dotfiles and system files unless toggled
             if not show_hidden:
                 if name.startswith(".") or name in ["__pycache__"]:
                     continue
@@ -205,7 +213,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     except Exception as e:
         text += f"❌ Error membaca folder: {e}\n"
 
-    # Pagination calculation for files
     total_files = len(files)
     total_pages = max(1, (total_files + FILES_PER_PAGE - 1) // FILES_PER_PAGE)
     page = max(1, min(page, total_pages))
@@ -244,7 +251,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
 
     inline_keyboard = []
 
-    # Navigation Bar
     parent_dir = os.path.dirname(current_dir)
     parent_key = encode_path(parent_dir)
     nav_buttons = []
@@ -253,7 +259,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     nav_buttons.append({"text": "🔄 Refresh", "callback_data": f"fm_cd:{dir_key}:{page}"})
     inline_keyboard.append(nav_buttons)
 
-    # Action Toolbar
     myproject_key = encode_path("/root/MyProject")
     toggle_hidden_text = "🙈 Sembunyikan System" if show_hidden else "👁️ Lihat File System"
     
@@ -269,7 +274,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         {"text": toggle_hidden_text, "callback_data": "fm_action:toggle_hidden"}
     ])
 
-    # Folder Buttons
     row = []
     for item in folders[:10]:
         full_path = os.path.join(current_dir, item)
@@ -282,7 +286,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     if row:
         inline_keyboard.append(row)
 
-    # File Buttons
     file_row = []
     for item in page_files:
         full_path = os.path.join(current_dir, item)
@@ -302,7 +305,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     if file_row:
         inline_keyboard.append(file_row)
 
-    # File Pagination Row
     if total_pages > 1:
         pag_row = []
         if page > 1:
@@ -347,8 +349,12 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         output, _ = process.communicate(timeout=300)
         output = output.strip() if output else "✅ Perintah selesai dijalankan."
 
-        result_header = f"🤖 OFFICE AI EXECUTION\n📍 cwd: {work_dir}\n💬 prompt: {prompt}\n━━━━━━━━━━━━━━━━━━━━━\n\n"
-        full_output = result_header + output
+        # Clean AI output text to remove raw asterisks and markdown clutter
+        clean_out = clean_ai_output(output)
+
+        rel_dir = work_dir.replace("/root", "~")
+        result_header = f"🤖 OFFICE AI EXECUTION\n📍 Path: {rel_dir}\n💬 Prompt: {prompt}\n━━━━━━━━━━━━━━━━━━━━━\n\n"
+        full_output = result_header + clean_out
         
         edit_message(chat_id, status_msg_id, full_output)
 
@@ -450,7 +456,8 @@ def process_callback_query(cq):
             try:
                 res = subprocess.run(["python3", OFFICE_TOOLS, "extract_text", file_path], capture_output=True, text=True)
                 snippet = res.stdout[:1200] if res.stdout else "Gagal mengekstrak teks."
-                text += f"📝 Pratinjau Isi Teks:\n{snippet}"
+                snippet_clean = clean_ai_output(snippet)
+                text += f"📝 Pratinjau Isi Teks:\n{snippet_clean}"
             except Exception as e:
                 text += f"⚠️ Tidak dapat membaca isi file: {e}"
 
@@ -487,7 +494,8 @@ def process_callback_query(cq):
         try:
             res = subprocess.run(["python3", OFFICE_TOOLS, "extract_text", file_path], capture_output=True, text=True)
             extracted = res.stdout or "Tidak ada teks yang dapat diekstrak."
-            send_message(chat_id, f"🔍 HASIL EKSTRAKSI TEKS ({os.path.basename(file_path)}):\n━━━━━━━━━━━━━━━━━━━━━\n{extracted[:3800]}")
+            extracted_clean = clean_ai_output(extracted)
+            send_message(chat_id, f"🔍 HASIL EKSTRAKSI TEKS ({os.path.basename(file_path)}):\n━━━━━━━━━━━━━━━━━━━━━\n{extracted_clean[:3800]}")
         except Exception as e:
             send_message(chat_id, f"❌ Error ekstraksi: {e}")
 
@@ -763,7 +771,8 @@ def process_update(update):
         try:
             res = subprocess.run(cmd_str, shell=True, capture_output=True, text=True, cwd=current_cwd, timeout=60)
             out = res.stdout or res.stderr or "✅ Perintah selesai (tanpa output)."
-            send_message(chat_id, f"💻 BASH EXECUTION:\n{cmd_str}\n━━━━━━━━━━━━━━━━━━━━━\n{out[:3800]}")
+            out_clean = clean_ai_output(out)
+            send_message(chat_id, f"💻 BASH EXECUTION:\n{cmd_str}\n━━━━━━━━━━━━━━━━━━━━━\n{out_clean[:3800]}")
         except Exception as e:
             send_message(chat_id, f"❌ Exec error: {e}")
         return
