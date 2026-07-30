@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Load environment file if present
+[ -f /root/.env ] && export $(grep -v '^#' /root/.env | xargs) 2>/dev/null
+
 # Configuration
-KONTROL_BOT_TOKEN="8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE"
-TELEGRAM_USER_ID="508687457"
+KONTROL_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE}"
+TELEGRAM_USER_ID="${TELEGRAM_OWNER_ID:-508687457}"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Ensure service file is up-to-date in git repo

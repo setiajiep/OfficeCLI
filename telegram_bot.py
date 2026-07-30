@@ -10,7 +10,7 @@ import threading
 import re
 from datetime import datetime
 
-TOKEN = "8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE"
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
 AGY_BIN = "/root/.local/bin/agy"
 OFFICE_TOOLS = "/root/office_tools.py"
@@ -24,11 +24,18 @@ PATH_MAP = {}
 PATH_COUNTER = 0
 
 def encode_path(path):
-    global PATH_COUNTER
+    global PATH_COUNTER, PATH_MAP
     abs_path = os.path.abspath(path)
     for k, v in PATH_MAP.items():
         if v == abs_path:
             return k
+    if len(PATH_MAP) > 3000:
+        PATH_MAP = {"p1": "/root", "p2": "/root/MyProject"}
+        PATH_COUNTER = 2
+        if abs_path == "/root":
+            return "p1"
+        if abs_path == "/root/MyProject":
+            return "p2"
     PATH_COUNTER += 1
     key = f"p{PATH_COUNTER}"
     PATH_MAP[key] = abs_path
@@ -157,20 +164,99 @@ def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode=None):
     return res
 
 def send_document(chat_id, file_path, caption=None):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendDocument"
     if not os.path.exists(file_path):
         send_message(chat_id, f"❌ File {file_path} tidak ditemukan.")
         return
+    url = f"https://api.telegram.org/bot{TOKEN}/sendDocument"
+    filename = os.path.basename(file_path)
+    
+    # Native Python Multipart Request
     try:
-        cmd = ["curl", "-s", "-F", f"chat_id={chat_id}", "-F", f"document=@{file_path}"]
+        boundary = '----WebKitFormBoundary' + hex(int(time.time() * 1000))[2:]
+        body = bytearray()
+        
+        # chat_id field
+        body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+        body.extend(f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{chat_id}\r\n'.encode('utf-8'))
+        
+        # caption field
         if caption:
-            cmd.extend(["-F", f"caption={caption}"])
-        cmd.append(url)
-        subprocess.run(cmd, check=True)
+            body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+            body.extend(f'Content-Disposition: form-data; name="caption"\r\n\r\n{caption}\r\n'.encode('utf-8'))
+            
+        # document field
+        body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+        body.extend(f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'.encode('utf-8'))
+        body.extend(b'Content-Type: application/octet-stream\r\n\r\n')
+        with open(file_path, 'rb') as f:
+            body.extend(f.read())
+        body.extend(b'\r\n')
+        body.extend(f'--{boundary}--\r\n'.encode('utf-8'))
+        
+        req = urllib.request.Request(url, data=bytes(body), headers={'Content-Type': f'multipart/form-data; boundary={boundary}'})
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.loads(resp.read().decode('utf-8'))
     except Exception as e:
-        send_message(chat_id, f"❌ Gagal mengirim document: {e}")
+        print(f"Native multipart upload failed ({e}), trying fallback curl...", file=sys.stderr)
+        try:
+            cmd = ["curl", "-s", "-F", f"chat_id={chat_id}", "-F", f"document=@{file_path}"]
+            if caption:
+                cmd.extend(["-F", f"caption={caption}"])
+            cmd.append(url)
+            subprocess.run(cmd, check=True)
+        except Exception as ex:
+            send_message(chat_id, f"❌ Gagal mengirim document: {ex}")
 
 SYSTEM_FILES = ["telegram_bot.py", "office_tools.py", "image_tools.py", "setup.sh", "backup_vps.sh", "git_backup.sh", "restore.sh", "antigravity-bot.service"]
+
+def get_disk_free_gb(path="/root"):
+    try:
+        total, used, free = shutil.disk_usage(path)
+        return free / (1024 ** 3)
+    except Exception:
+        return 0.0
+
+def get_system_status():
+    """Retrieve detailed real-time VPS metrics"""
+    status = {}
+    try:
+        # Disk usage
+        total, used, free = shutil.disk_usage("/root")
+        status["disk_total_gb"] = total / (1024 ** 3)
+        status["disk_used_gb"] = used / (1024 ** 3)
+        status["disk_free_gb"] = free / (1024 ** 3)
+        status["disk_percent"] = (used / total) * 100
+
+        # Memory usage
+        with open("/proc/meminfo", "r") as f:
+            meminfo = f.read()
+        mem_total = 0
+        mem_available = 0
+        for line in meminfo.splitlines():
+            if line.startswith("MemTotal:"):
+                mem_total = int(line.split()[1]) / 1024
+            elif line.startswith("MemAvailable:"):
+                mem_available = int(line.split()[1]) / 1024
+        mem_used = mem_total - mem_available
+        status["mem_total_mb"] = mem_total
+        status["mem_used_mb"] = mem_used
+        status["mem_percent"] = (mem_used / mem_total) * 100 if mem_total else 0.0
+
+        # Uptime
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.readline().split()[0])
+            hours, remainder = divmod(int(uptime_seconds), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            days, hours = divmod(hours, 24)
+            status["uptime"] = f"{days}d {hours}h {minutes}m"
+
+        # CPU Load
+        load1, load5, load15 = os.getloadavg()
+        status["cpu_load"] = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
+
+    except Exception as e:
+        status["error"] = str(e)
+    return status
 
 def render_file_manager(user_id, current_dir, page=1, notice=None):
     current_dir = os.path.abspath(current_dir)
@@ -179,11 +265,13 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
 
     dir_key = encode_path(current_dir)
     show_hidden = get_show_hidden(user_id)
+    free_gb = get_disk_free_gb(current_dir)
 
     rel_path = current_dir.replace("/root", "~")
     text = f"🏢 OFFICE CLI & PHOTO SUITE MANAGER\n"
     text += f"━━━━━━━━━━━━━━━━━━━━━\n"
     text += f"📍 Path: {rel_path}\n"
+    text += f"💾 Free Space: {free_gb:.1f} GB\n"
     if notice:
         text += f"\n{notice}\n"
     text += "━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -237,8 +325,8 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
             icon = "📄"
             if ext == ".pdf" or fl_name.lower().startswith("doc-"): icon = "📕"
             elif ext in [".docx", ".doc"]: icon = "📘"
-            elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
             elif ext in [".pptx", ".ppt"]: icon = "📙"
+            elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
             elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]: icon = "🖼️"
 
             try:
@@ -269,6 +357,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     ])
     inline_keyboard.append([
         {"text": "📂 MyProject Home", "callback_data": f"fm_cd:{myproject_key}:1"},
+        {"text": "📊 Status VPS", "callback_data": "fm_action:view_status"},
         {"text": "📦 Backup VPS", "callback_data": "fm_action:do_backup"}
     ])
     inline_keyboard.append([
@@ -295,8 +384,8 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         icon = "📄"
         if ext == ".pdf" or item.lower().startswith("doc-"): icon = "📕"
         elif ext in [".docx", ".doc"]: icon = "📘"
-        elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
         elif ext in [".pptx", ".ppt"]: icon = "📙"
+        elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
         elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]: icon = "🖼️"
 
         btn_text = f"{icon} {item[:16]}"
@@ -480,8 +569,9 @@ def process_callback_query(cq):
             
             if is_image:
                 try:
-                    res = subprocess.run(["python3", "-c", f"from PIL import Image; img=Image.open('{file_path}'); print(f'Resolusi: {{img.size[0]}}x{{img.size[1]}} | Mode: {{img.mode}}')"], capture_output=True, text=True)
-                    text += f"📐 {res.stdout.strip()}\n"
+                    from PIL import Image
+                    with Image.open(file_path) as img:
+                        text += f"📐 Resolusi: {img.width}x{img.height} | Mode: {img.mode}\n"
                 except Exception:
                     pass
 
@@ -489,7 +579,8 @@ def process_callback_query(cq):
             if is_image:
                 btn_list.append([
                     {"text": "🔄 Rotate 90°", "callback_data": f"img_action:rotate:{fl_key}"},
-                    {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"}
+                    {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"},
+                    {"text": "✂️ Auto-Crop Border", "callback_data": f"img_action:autocrop:{fl_key}"}
                 ])
                 btn_list.append([
                     {"text": "🎨 Grayscale", "callback_data": f"img_action:filter_grayscale:{fl_key}"},
@@ -497,8 +588,12 @@ def process_callback_query(cq):
                     {"text": "🎞️ Vintage", "callback_data": f"img_action:filter_vintage:{fl_key}"}
                 ])
                 btn_list.append([
-                    {"text": "🏷️ Add Watermark", "callback_data": f"img_action:wm_prompt:{fl_key}"},
-                    {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"}
+                    {"text": "🏷️ Watermark Bottom", "callback_data": f"img_action:wm_prompt:{fl_key}"},
+                    {"text": "🏷️ Watermark Diagonal", "callback_data": f"img_action:wm_diag_prompt:{fl_key}"}
+                ])
+                btn_list.append([
+                    {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"},
+                    {"text": "⚡ Kompres Foto", "callback_data": f"img_action:compress:{fl_key}"}
                 ])
                 btn_list.append([
                     {"text": "🔄 Convert ke PNG", "callback_data": f"img_action:conv_png:{fl_key}"},
@@ -506,7 +601,10 @@ def process_callback_query(cq):
                 ])
             else:
                 if ext == ".pdf" or file_name.lower().startswith("doc-"):
-                    btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
+                    btn_list.append([
+                        {"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"},
+                        {"text": "✂️ Extract Halaman PDF", "callback_data": f"fm_split_pdf_prompt:{fl_key}"}
+                    ])
                 if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
                     btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
                 btn_list.append([{"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"}])
@@ -542,6 +640,15 @@ def process_callback_query(cq):
                 send_document(chat_id, out_path, caption=f"🪞 Hasil Flip: {os.path.basename(out_path)}")
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal flip: {e}")
+
+        elif sub_action == "autocrop":
+            answer_callback_query(cq_id, "✂️ Auto-Crop Edge...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "crop", file_path, "auto"], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"✂️ Hasil Auto-Crop: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal auto-crop: {e}")
 
         elif sub_action.startswith("filter_"):
             ftype = sub_action.split("filter_", 1)[1]
@@ -581,10 +688,32 @@ def process_callback_query(cq):
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal convert PDF: {e}")
 
+        elif sub_action == "compress":
+            answer_callback_query(cq_id, "⚡ Kompres Foto...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "compress", file_path, "75"], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"⚡ Hasil Kompresi Foto: {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal kompres foto: {e}")
+
         elif sub_action == "wm_prompt":
             answer_callback_query(cq_id, "🏷️ Watermark Text")
             force_reply = {"force_reply": True, "selective": True}
             send_message(chat_id, f"🏷️ TAMBAHKAN WATERMARK TEKS\n\nKetik teks watermark yang ingin ditambahkan pada `{file_name}`:", reply_markup=force_reply)
+
+        elif sub_action == "wm_diag_prompt":
+            answer_callback_query(cq_id, "🏷️ Watermark Diagonal")
+            force_reply = {"force_reply": True, "selective": True}
+            send_message(chat_id, f"🏷️ TAMBAHKAN WATERMARK DIAGONAL\n\nKetik teks watermark diagonal yang ingin ditambahkan pada `{file_name}`:", reply_markup=force_reply)
+
+    elif data.startswith("fm_split_pdf_prompt:"):
+        fl_key = data.split("fm_split_pdf_prompt:", 1)[1]
+        file_path = decode_path(fl_key)
+        file_name = os.path.basename(file_path)
+        answer_callback_query(cq_id, "✂️ Split PDF")
+        force_reply = {"force_reply": True, "selective": True}
+        send_message(chat_id, f"✂️ EXTRACT / SPLIT HALAMAN PDF\n\nKetik nomor halaman yang ingin diekstrak dari `{file_name}` (contoh: `1-3` atau `1,5,8`):", reply_markup=force_reply)
 
     elif data.startswith("fm_stamp_prompt:"):
         fl_key = data.split("fm_stamp_prompt:", 1)[1]
@@ -670,12 +799,26 @@ def process_callback_query(cq):
         action = data.split("fm_action:", 1)[1]
         if action == "noop":
             answer_callback_query(cq_id)
+        elif action == "view_status":
+            answer_callback_query(cq_id, "📊 Memuat Status VPS...")
+            st = get_system_status()
+            status_text = (
+                "📊 *REAL-TIME VPS SYSTEM STATUS*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"⏱️ *Uptime:* `{st.get('uptime', 'N/A')}`\n"
+                f"⚡ *CPU Load:* `{st.get('cpu_load', 'N/A')}`\n"
+                f"🧠 *RAM Used:* `{st.get('mem_used_mb', 0):.1f} MB / {st.get('mem_total_mb', 0):.1f} MB ({st.get('mem_percent', 0):.1f}%)`\n"
+                f"💾 *Disk Free:* `{st.get('disk_free_gb', 0):.2f} GB / {st.get('disk_total_gb', 0):.2f} GB ({st.get('disk_percent', 0):.1f}% used)`\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                "🤖 *Bot Controller:* Active (@Kontrolagybot)"
+            )
+            send_message(chat_id, status_text, parse_mode="Markdown")
         elif action == "toggle_hidden":
             new_state = toggle_show_hidden(user_id)
             state_str = "ditampilkan" if new_state else "disembunyikan"
             answer_callback_query(cq_id, f"👁️ File System {state_str}!")
             msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
-            edit_message(chat_id, message_id, text, reply_markup=reply_markup)
+            edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup)
         elif action == "do_backup":
             answer_callback_query(cq_id, "📦 Mengirim Backup VPS...")
             send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
@@ -720,7 +863,7 @@ def process_update(update):
 
     current_cwd = get_user_cwd(user_id)
 
-    # Check for ForceReply (Interactive Folder/File creation, Watermarking, or PDF Stamping)
+    # Check for ForceReply (Interactive Folder/File creation, Watermarking, PDF Stamping, or PDF Splitting)
     reply_to = message.get("reply_to_message")
     if reply_to and "text" in reply_to:
         reply_text = reply_to["text"]
@@ -761,6 +904,36 @@ def process_update(update):
                         send_document(chat_id, out_img, caption=f"🏷️ Hasil Watermark: {os.path.basename(out_img)}")
                     except Exception as e:
                         send_message(chat_id, f"❌ Gagal watermark: {e}")
+            return
+
+        if "TAMBAHKAN WATERMARK DIAGONAL" in reply_text and user_input_name:
+            match = re.search(r'pada `(.*?)`:', reply_text)
+            img_filename = match.group(1) if match else None
+            if img_filename:
+                img_path = os.path.join(current_cwd, img_filename)
+                if os.path.exists(img_path):
+                    send_message(chat_id, f"🏷️ Menambahkan watermark diagonal `{user_input_name}` pada `{img_filename}`...")
+                    try:
+                        res = subprocess.run(["python3", IMAGE_TOOLS, "watermark", img_path, user_input_name, "diagonal", "white", "true"], capture_output=True, text=True)
+                        out_img = res.stdout.strip().split()[-1] if res.stdout else img_path
+                        send_document(chat_id, out_img, caption=f"🏷️ Hasil Watermark Diagonal: {os.path.basename(out_img)}")
+                    except Exception as e:
+                        send_message(chat_id, f"❌ Gagal watermark diagonal: {e}")
+            return
+
+        if "EXTRACT / SPLIT HALAMAN PDF" in reply_text and user_input_name:
+            match = re.search(r'dari `(.*?)`', reply_text)
+            pdf_filename = match.group(1) if match else None
+            if pdf_filename:
+                pdf_path = os.path.join(current_cwd, pdf_filename)
+                if os.path.exists(pdf_path):
+                    send_message(chat_id, f"✂️ Mengekstrak halaman `{user_input_name}` dari `{pdf_filename}`...")
+                    try:
+                        res = subprocess.run(["python3", OFFICE_TOOLS, "split", pdf_path, user_input_name], capture_output=True, text=True)
+                        out_pdf = res.stdout.strip().split()[-1] if res.stdout else pdf_path
+                        send_document(chat_id, out_pdf, caption=f"✂️ Hasil Ekstraksi Halaman PDF: {os.path.basename(out_pdf)}")
+                    except Exception as e:
+                        send_message(chat_id, f"❌ Gagal split PDF: {e}")
             return
 
         if "TEMPEL TANDA TANGAN" in reply_text:
@@ -820,7 +993,8 @@ def process_update(update):
                 btn_list = [
                     [
                         {"text": "🔄 Rotate 90°", "callback_data": f"img_action:rotate:{fl_key}"},
-                        {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"}
+                        {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"},
+                        {"text": "✂️ Auto-Crop", "callback_data": f"img_action:autocrop:{fl_key}"}
                     ],
                     [
                         {"text": "🎨 Grayscale", "callback_data": f"img_action:filter_grayscale:{fl_key}"},
@@ -828,8 +1002,12 @@ def process_update(update):
                         {"text": "🎞️ Vintage", "callback_data": f"img_action:filter_vintage:{fl_key}"}
                     ],
                     [
-                        {"text": "🏷️ Add Watermark", "callback_data": f"img_action:wm_prompt:{fl_key}"},
-                        {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"}
+                        {"text": "🏷️ Watermark Bottom", "callback_data": f"img_action:wm_prompt:{fl_key}"},
+                        {"text": "🏷️ Watermark Diagonal", "callback_data": f"img_action:wm_diag_prompt:{fl_key}"}
+                    ],
+                    [
+                        {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"},
+                        {"text": "⚡ Kompres Foto", "callback_data": f"img_action:compress:{fl_key}"}
                     ],
                     [
                         {"text": "🔄 Convert ke PNG", "callback_data": f"img_action:conv_png:{fl_key}"},
@@ -873,7 +1051,8 @@ def process_update(update):
                     btn_list = [
                         [
                             {"text": "🔄 Rotate 90°", "callback_data": f"img_action:rotate:{fl_key}"},
-                            {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"}
+                            {"text": "🪞 Flip Horiz", "callback_data": f"img_action:flip:{fl_key}"},
+                            {"text": "✂️ Auto-Crop", "callback_data": f"img_action:autocrop:{fl_key}"}
                         ],
                         [
                             {"text": "🎨 Grayscale", "callback_data": f"img_action:filter_grayscale:{fl_key}"},
@@ -881,13 +1060,20 @@ def process_update(update):
                             {"text": "🎞️ Vintage", "callback_data": f"img_action:filter_vintage:{fl_key}"}
                         ],
                         [
-                            {"text": "🏷️ Add Watermark", "callback_data": f"img_action:wm_prompt:{fl_key}"},
-                            {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"}
+                            {"text": "🏷️ Watermark Bottom", "callback_data": f"img_action:wm_prompt:{fl_key}"},
+                            {"text": "🏷️ Watermark Diagonal", "callback_data": f"img_action:wm_diag_prompt:{fl_key}"}
+                        ],
+                        [
+                            {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"},
+                            {"text": "⚡ Kompres Foto", "callback_data": f"img_action:compress:{fl_key}"}
                         ]
                     ]
                 else:
                     if ext == ".pdf" or file_name.lower().startswith("doc-"):
-                        btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
+                        btn_list.append([
+                            {"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"},
+                            {"text": "✂️ Extract Halaman PDF", "callback_data": f"fm_split_pdf_prompt:{fl_key}"}
+                        ])
                     if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
                         btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
                     btn_list.append([{"text": "🔍 Extract Text / Data", "callback_data": f"fm_extract_text:{fl_key}"}])
@@ -911,9 +1097,74 @@ def process_update(update):
         send_message(chat_id, msg_text, reply_markup=reply_markup)
         return
 
+    if text in ["/status", "/sys", "/vps"]:
+        st = get_system_status()
+        status_text = (
+            "📊 *REAL-TIME VPS SYSTEM DASHBOARD*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"⏱️ *Uptime:* `{st.get('uptime', 'N/A')}`\n"
+            f"⚡ *CPU Load:* `{st.get('cpu_load', 'N/A')}`\n"
+            f"🧠 *RAM Used:* `{st.get('mem_used_mb', 0):.1f} MB / {st.get('mem_total_mb', 0):.1f} MB ({st.get('mem_percent', 0):.1f}%)`\n"
+            f"💾 *Disk Free:* `{st.get('disk_free_gb', 0):.2f} GB / {st.get('disk_total_gb', 0):.2f} GB ({st.get('disk_percent', 0):.1f}% used)`\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "🤖 *Bot Service:* Running & Active\n"
+            "🏢 *Office CLI & Photo Suite:* Fully Operational"
+        )
+        send_message(chat_id, status_text, parse_mode="Markdown")
+        return
+
+    if text in ["/help", "/bantuan"]:
+        help_txt = (
+            "🏢 *OFFICE CLI & PHOTO SUITE CONTROLLER*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "📂 *MANAJEMEN FILE:*\n"
+            "• `/fm` atau `/ls` : Buka File Manager interaktif\n"
+            "• `/status` atau `/sys` : Dashboard RAM, CPU & Disk VPS\n"
+            "• `/cd <path>` : Pindah direktori kerja\n"
+            "• `/pwd` : Tampilkan lokasi folder saat ini\n"
+            "• `/mkdir <nama>` : Buat folder baru\n"
+            "• `/touch <nama>` : Buat file kosong baru\n"
+            "• `/rm <nama>` : Hapus file atau folder\n"
+            "• `/rename <lama> <baru>` : Ganti nama file/folder\n"
+            "• `/download <file>` : Unduh file langsung ke chat\n"
+            "• `/merge <output.pdf> <file1.pdf> <file2.pdf>` : Penggabungan PDF\n"
+            "• `/exec <cmd>` : Jalankan perintah terminal Bash\n"
+            "• `/backup` : Trigger backup otomatis ke GitHub & Telegram\n\n"
+            "🖼️ *PHOTO & MEDIA EDITOR:*\n"
+            "• Upload foto untuk akses tombol editor (Rotate, Flip, Auto-Crop, Filter, Watermark Bottom/Diagonal, Hapus Background, Kompres, Convert PNG/PDF).\n"
+            "• Kamu juga bisa memberi instruksi edit langsung di *Caption* foto saat diupload!\n\n"
+            "📕 *OFFICE & DOKUMEN SUITE:*\n"
+            "• Upload PDF / Word / PowerPoint / Excel / Text untuk konversi ke PDF, penggabungan / ekstraksi halaman PDF, ekstraksi teks, atau penempelan Tanda Tangan & Stempel.\n\n"
+            "🤖 *AI ANTIGRAVITY CONTROLLER:*\n"
+            "• Ketik pesan teks biasa apa saja untuk memunculkan Agen AI Antigravity untuk pengerjaan tugas otomatis!"
+        )
+        send_message(chat_id, help_txt, parse_mode="Markdown")
+        return
+
     if text in ["/backup", "/backupvps"]:
         send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
         subprocess.Popen(["/root/backup_vps.sh"], cwd="/root")
+        return
+
+    if text.startswith("/merge "):
+        parts = text[7:].strip().split()
+        if len(parts) >= 2:
+            out_file = parts[0] if parts[0].endswith(".pdf") else f"{parts[0]}.pdf"
+            pdf_files = parts[1:]
+            pdf_paths = [os.path.join(current_cwd, p) if not p.startswith("/") else p for p in pdf_files]
+            out_path = os.path.join(current_cwd, out_file)
+            send_message(chat_id, f"📚 Menggabungkan {len(pdf_paths)} PDF ke `{out_file}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "merge", out_path] + pdf_paths, capture_output=True, text=True)
+                merged = res.stdout.strip()
+                if merged and os.path.exists(merged):
+                    send_document(chat_id, merged, caption=f"📚 Hasil Penggabungan PDF: {os.path.basename(merged)}")
+                else:
+                    send_message(chat_id, f"❌ Gagal menggabungkan PDF: {res.stderr}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Error merge: {e}")
+        else:
+            send_message(chat_id, "ℹ️ Format: `/merge output.pdf file1.pdf file2.pdf`", parse_mode="Markdown")
         return
 
     if text.startswith("/cd "):

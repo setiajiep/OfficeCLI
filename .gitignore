@@ -10,3 +10,11 @@ node_modules/
 tmp/
 /tmp/
 .npm/
+__pycache__/
+*.pyc
+*.tmp
+vps_backup_*.tar.gz
+signature_temp.png
+test_doc.pdf
+test_signature*.png
+test_signed_doc.pdf

@@ -55,6 +55,41 @@ def flip_image(img_path, direction='horizontal', output_path=None):
         print(f"Successfully flipped image ({direction}): {output_path}")
         return output_path
 
+def crop_image(img_path, left=None, top=None, right=None, bottom=None, auto=False, output_path=None):
+    """
+    Crop an image using bounding box or auto-crop whitespace/transparent edges.
+    """
+    if not os.path.exists(img_path):
+        return None
+    if output_path is None:
+        base, ext = os.path.splitext(img_path)
+        output_path = f"{base}_cropped{ext}"
+
+    with Image.open(img_path) as img:
+        w, h = img.size
+        if auto:
+            # Auto-crop non-empty bounding box
+            if img.mode == 'RGBA':
+                bbox = img.getbbox()
+            else:
+                gray = img.convert('L')
+                inverted = ImageOps.invert(gray)
+                bbox = inverted.getbbox()
+            if bbox:
+                cropped = img.crop(bbox)
+            else:
+                cropped = img
+        else:
+            l = int(left) if left is not None else 0
+            t = int(top) if top is not None else 0
+            r = int(right) if right is not None else w
+            b = int(bottom) if bottom is not None else h
+            cropped = img.crop((l, t, r, b))
+
+        cropped.save(output_path)
+        print(f"Successfully cropped image: {output_path}")
+        return output_path
+
 def apply_filter(img_path, filter_type='grayscale', output_path=None):
     if not os.path.exists(img_path):
         return None
@@ -85,7 +120,6 @@ def apply_filter(img_path, filter_type='grayscale', output_path=None):
             else:
                 res = ImageOps.invert(img.convert('RGB'))
         elif ftype == 'vintage':
-            # Vintage warm filter
             img_cv = cv2.imread(img_path)
             if img_cv is not None:
                 b, g, r = cv2.split(img_cv)
@@ -133,50 +167,86 @@ def adjust_image(img_path, brightness=1.0, contrast=1.0, saturation=1.0, sharpne
         print(f"Successfully adjusted image: {output_path}")
         return output_path
 
-def add_watermark(img_path, text, position='bottom-right', font_size=36, color="white", output_path=None):
+def add_watermark(img_path, text, position='bottom-right', font_size=36, color="white", alpha=200, diagonal=False, output_path=None):
+    """
+    Add text watermark with custom positioning, font size, color, alpha transparency, or diagonal angle.
+    """
     if not os.path.exists(img_path):
         return None
     if output_path is None:
         base, ext = os.path.splitext(img_path)
         output_path = f"{base}_watermarked{ext}"
 
+    COLOR_MAP = {
+        "white": (255, 255, 255),
+        "black": (0, 0, 0),
+        "red": (230, 50, 50),
+        "blue": (50, 120, 240),
+        "green": (50, 200, 80),
+        "yellow": (240, 200, 40),
+        "gold": (220, 175, 40)
+    }
+    rgb_color = COLOR_MAP.get(str(color).lower(), (255, 255, 255))
+    text_fill = (*rgb_color, int(alpha))
+
     with Image.open(img_path).convert("RGBA") as base_img:
-        txt_img = Image.new("RGBA", base_img.size, (255, 255, 255, 0))
-        draw = ImageDraw.Draw(txt_img)
+        w, h = base_img.size
 
         try:
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(font_size))
         except Exception:
             font = ImageFont.load_default()
 
-        w, h = base_img.size
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_w = bbox[2] - bbox[0]
-        text_h = bbox[3] - bbox[1]
+        if diagonal or str(position).lower() == 'diagonal':
+            # Create a larger transparent canvas for angled watermark text
+            txt_layer = Image.new("RGBA", (w * 2, h * 2), (255, 255, 255, 0))
+            draw = ImageDraw.Draw(txt_layer)
+            
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
 
-        pos = position.lower()
-        if pos == 'center':
-            x = (w - text_w) / 2
-            y = (h - text_h) / 2
-        elif pos == 'bottom-left':
-            x = 30
-            y = h - text_h - 30
-        elif pos == 'top-right':
-            x = w - text_w - 30
-            y = 30
-        elif pos == 'top-left':
-            x = 30
-            y = 30
-        else: # bottom-right
-            x = w - text_w - 30
-            y = h - text_h - 30
+            cx = w - text_w / 2
+            cy = h - text_h / 2
+            draw.rectangle([cx - 15, cy - 8, cx + text_w + 15, cy + text_h + 8], fill=(0, 0, 0, int(alpha * 0.4)))
+            draw.text((cx, cy), text, font=font, fill=text_fill)
 
-        # Draw semi-transparent background shadow for contrast
-        draw.rectangle([x - 10, y - 5, x + text_w + 10, y + text_h + 5], fill=(0, 0, 0, 140))
-        draw.text((x, y), text, font=font, fill=(255, 255, 255, 240))
+            rotated_layer = txt_layer.rotate(35, resample=Image.Resampling.BICUBIC, center=(w, h))
+            crop_box = (w // 2, h // 2, w // 2 + w, h // 2 + h)
+            out_layer = rotated_layer.crop(crop_box)
+            out_img = Image.alpha_composite(base_img, out_layer)
 
-        out_img = Image.alpha_composite(base_img, txt_img)
-        if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
+        else:
+            txt_img = Image.new("RGBA", base_img.size, (255, 255, 255, 0))
+            draw = ImageDraw.Draw(txt_img)
+            
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+
+            pos = str(position).lower()
+            if pos == 'center':
+                x = (w - text_w) / 2
+                y = (h - text_h) / 2
+            elif pos == 'bottom-left':
+                x = 30
+                y = h - text_h - 30
+            elif pos == 'top-right':
+                x = w - text_w - 30
+                y = 30
+            elif pos == 'top-left':
+                x = 30
+                y = 30
+            else: # bottom-right
+                x = w - text_w - 30
+                y = h - text_h - 30
+
+            draw.rectangle([x - 10, y - 5, x + text_w + 10, y + text_h + 5], fill=(0, 0, 0, int(alpha * 0.5)))
+            draw.text((x, y), text, font=font, fill=text_fill)
+
+            out_img = Image.alpha_composite(base_img, txt_img)
+
+        if output_path.lower().endswith(('.jpg', '.jpeg')):
             out_img = out_img.convert("RGB")
         out_img.save(output_path)
         print(f"Successfully added watermark: {output_path}")
@@ -199,8 +269,8 @@ def convert_format(img_path, target_ext="png", output_path=None):
         print(f"Successfully converted format to {target_ext}: {output_path}")
         return output_path
 
-def remove_bg(img_path, output_path=None):
-    """Simple automatic background removal for product / signature images"""
+def remove_bg(img_path, output_path=None, threshold=210):
+    """Automatic background removal with edge smoothing for document / signature images"""
     if not os.path.exists(img_path):
         return None
     if output_path is None:
@@ -213,20 +283,55 @@ def remove_bg(img_path, output_path=None):
 
     # Convert to RGBA
     b_channel, g_channel, r_channel = cv2.split(img_cv)
-    alpha = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
-
-    # Detect white/light background
+    
+    # Detect light background with inverse thresholding
     gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-    _, alpha = cv2.threshold(gray, 230, 255, cv2.THRESH_BINARY_INV)
+    _, alpha = cv2.threshold(gray, int(threshold), 255, cv2.THRESH_BINARY_INV)
+
+    # Apply light Gaussian blur on alpha mask for smooth edges
+    alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
 
     rgba = cv2.merge((b_channel, g_channel, r_channel, alpha))
     cv2.imwrite(output_path, rgba)
     print(f"Successfully removed white background: {output_path}")
     return output_path
 
+def compress_image(img_path, quality=75, output_path=None):
+    """Compress image size while preserving visual quality"""
+    if not os.path.exists(img_path):
+        return None
+    if output_path is None:
+        base, ext = os.path.splitext(img_path)
+        output_path = f"{base}_compressed{ext}"
+
+    with Image.open(img_path) as img:
+        if img.mode in ['RGBA', 'LA', 'P'] and output_path.lower().endswith(('.jpg', '.jpeg')):
+            img = img.convert('RGB')
+        img.save(output_path, optimize=True, quality=int(quality))
+        print(f"Successfully compressed image (quality={quality}): {output_path}")
+        return output_path
+
+def get_image_info(img_path):
+    """Get metadata and dimensions of an image"""
+    if not os.path.exists(img_path):
+        return {}
+    try:
+        with Image.open(img_path) as img:
+            size_kb = os.path.getsize(img_path) / 1024
+            return {
+                "format": img.format,
+                "mode": img.mode,
+                "width": img.width,
+                "height": img.height,
+                "dimensions": f"{img.width}x{img.height}",
+                "size_kb": size_kb
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 image_tools.py <resize|rotate|flip|filter|adjust|watermark|convert|nobg> <img_path> [args...]")
+        print("Usage: python3 image_tools.py <resize|rotate|flip|crop|filter|adjust|watermark|convert|nobg|compress|info> <img_path> [args...]")
         sys.exit(1)
 
     action = sys.argv[1]
@@ -241,6 +346,11 @@ if __name__ == "__main__":
     elif action == "flip":
         d = sys.argv[3] if len(sys.argv) > 3 else "horizontal"
         flip_image(img_path, direction=d)
+    elif action == "crop":
+        if len(sys.argv) > 3 and sys.argv[3] == "auto":
+            crop_image(img_path, auto=True)
+        elif len(sys.argv) >= 7:
+            crop_image(img_path, left=sys.argv[3], top=sys.argv[4], right=sys.argv[5], bottom=sys.argv[6])
     elif action == "filter" and len(sys.argv) > 3:
         apply_filter(img_path, filter_type=sys.argv[3])
     elif action == "adjust":
@@ -252,8 +362,16 @@ if __name__ == "__main__":
     elif action == "watermark" and len(sys.argv) > 3:
         txt = sys.argv[3]
         pos = sys.argv[4] if len(sys.argv) > 4 else "bottom-right"
-        add_watermark(img_path, txt, position=pos)
+        col = sys.argv[5] if len(sys.argv) > 5 else "white"
+        diag = True if pos == "diagonal" or (len(sys.argv) > 6 and sys.argv[6] == "true") else False
+        add_watermark(img_path, txt, position=pos, color=col, diagonal=diag)
     elif action == "convert" and len(sys.argv) > 3:
         convert_format(img_path, target_ext=sys.argv[3])
     elif action == "nobg":
-        remove_bg(img_path)
+        th = sys.argv[3] if len(sys.argv) > 3 else 210
+        remove_bg(img_path, threshold=th)
+    elif action == "compress":
+        q = sys.argv[3] if len(sys.argv) > 3 else 75
+        compress_image(img_path, quality=q)
+    elif action == "info":
+        print(get_image_info(img_path))

@@ -44,7 +44,7 @@ if [ -f "/root/antigravity-bot.service" ]; then
 fi
 
 # 6. Configure Permissions & Executables
-chmod +x /root/telegram_bot.py /root/backup_vps.sh /root/git_backup.sh /root/setup.sh /root/office_tools.py 2>/dev/null || true
+chmod +x /root/telegram_bot.py /root/backup_vps.sh /root/git_backup.sh /root/setup.sh /root/office_tools.py /root/image_tools.py 2>/dev/null || true
 chmod +x /root/.local/bin/agy 2>/dev/null || true
 
 # 7. Enable & Restart Systemd Bot Service

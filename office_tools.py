@@ -2,6 +2,7 @@
 import os
 import sys
 import io
+import time
 import subprocess
 
 def convert_to_pdf(input_path, output_dir=None):
@@ -53,18 +54,39 @@ def extract_text(file_path):
         except Exception as e:
             return f"Error extracting DOCX: {e}"
 
+    elif ext in [".pptx", ".ppt"]:
+        try:
+            import pptx
+            prs = pptx.Presentation(file_path)
+            slides_text = []
+            for i, slide in enumerate(prs.slides, 1):
+                slides_text.append(f"--- Slide {i} ---")
+                for shape in slide.shapes:
+                    if shape.has_text_frame:
+                        for paragraph in shape.text_frame.paragraphs:
+                            if paragraph.text.strip():
+                                slides_text.append(paragraph.text.strip())
+            return "\n".join(slides_text)
+        except Exception as e:
+            return f"Error extracting PowerPoint: {e}"
+
     elif ext in [".xlsx", ".xls", ".csv"]:
         try:
             import pandas as pd
             if ext == ".csv":
                 df = pd.read_csv(file_path)
+                return df.to_string()
             else:
-                df = pd.read_excel(file_path)
-            return df.to_string()
+                sheets_dict = pd.read_excel(file_path, sheet_name=None)
+                out_str = []
+                for sheet_name, df in sheets_dict.items():
+                    out_str.append(f"--- Sheet: {sheet_name} ---")
+                    out_str.append(df.to_string())
+                return "\n\n".join(out_str)
         except Exception as e:
             return f"Error reading Spreadsheet: {e}"
 
-    elif ext in [".txt", ".md", ".json", ".py", ".html", ".css", ".js"]:
+    elif ext in [".txt", ".md", ".json", ".py", ".html", ".css", ".js", ".sh", ".yaml", ".yml"]:
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 return f.read()
@@ -73,16 +95,152 @@ def extract_text(file_path):
 
     return "Unsupported file format for text extraction."
 
-def stamp_image_on_pdf(pdf_path, img_path, output_path=None, page_num=-1, x=350, y=80, width=150, height=60):
+def get_doc_info(file_path):
+    """Retrieve summary metadata for documents and media"""
+    if not os.path.exists(file_path):
+        return {}
+    
+    ext = os.path.splitext(file_path)[1].lower()
+    info = {"size_kb": os.path.getsize(file_path) / 1024}
+
+    if ext == ".pdf":
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(file_path)
+            info["pages"] = len(reader.pages)
+        except Exception:
+            pass
+    elif ext in [".docx", ".doc"]:
+        try:
+            import docx
+            doc = docx.Document(file_path)
+            info["paragraphs"] = len(doc.paragraphs)
+            info["tables"] = len(doc.tables)
+        except Exception:
+            pass
+    elif ext in [".pptx", ".ppt"]:
+        try:
+            import pptx
+            prs = pptx.Presentation(file_path)
+            info["slides"] = len(prs.slides)
+        except Exception:
+            pass
+    elif ext in [".xlsx", ".xls"]:
+        try:
+            import pandas as pd
+            xl = pd.ExcelFile(file_path)
+            info["sheets"] = xl.sheet_names
+        except Exception:
+            pass
+    elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]:
+        try:
+            from PIL import Image
+            with Image.open(file_path) as img:
+                info["dimensions"] = f"{img.width}x{img.height}"
+                info["mode"] = img.mode
+        except Exception:
+            pass
+    return info
+
+def merge_pdfs(pdf_list, output_path=None):
+    """Merge multiple PDF files into one single PDF document"""
+    from pypdf import PdfWriter
+    if not pdf_list:
+        print("No input PDF files provided for merging.")
+        return None
+
+    valid_files = [f for f in pdf_list if os.path.exists(f) and f.lower().endswith(".pdf")]
+    if not valid_files:
+        print("No valid PDF files found in arguments.")
+        return None
+
+    if output_path is None:
+        first_dir = os.path.dirname(os.path.abspath(valid_files[0]))
+        output_path = os.path.join(first_dir, f"merged_{int(time.time())}.pdf")
+
+    writer = PdfWriter()
+    merged_count = 0
+    for pdf in valid_files:
+        try:
+            writer.append(pdf)
+            merged_count += 1
+        except Exception as e:
+            print(f"Error appending PDF '{pdf}': {e}")
+
+    if merged_count == 0:
+        return None
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    print(f"Successfully merged {merged_count} PDF files: {output_path}")
+    return output_path
+
+def split_pdf(pdf_path, pages="1", output_path=None):
     """
-    Stamp an image (signature, logo, watermark, stamp) onto a PDF page.
-    page_num: -1 for last page, or 1-based page number (e.g. 1 for page 1).
-    x, y: coordinates from bottom-left corner in points (1 inch = 72 pt).
-    width, height: image dimensions in points.
+    Extract specific page numbers or page ranges from a PDF.
+    pages: string format e.g. "1-3, 5, 8"
+    """
+    from pypdf import PdfReader, PdfWriter
+    if not os.path.exists(pdf_path):
+        print(f"PDF file not found: {pdf_path}")
+        return None
+
+    reader = PdfReader(pdf_path)
+    total_pages = len(reader.pages)
+    selected_indices = set()
+
+    for part in str(pages).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            sp = part.split("-")
+            try:
+                s, e = int(sp[0]), int(sp[1])
+                for p in range(max(1, s), min(total_pages, e) + 1):
+                    selected_indices.add(p - 1)
+            except ValueError:
+                pass
+        else:
+            try:
+                p = int(part)
+                if 1 <= p <= total_pages:
+                    selected_indices.add(p - 1)
+            except ValueError:
+                pass
+
+    if not selected_indices:
+        print("No valid page numbers selected for extraction.")
+        return None
+
+    writer = PdfWriter()
+    for idx in sorted(selected_indices):
+        writer.add_page(reader.pages[idx])
+
+    if output_path is None:
+        base, _ = os.path.splitext(pdf_path)
+        output_path = f"{base}_pages_{pages.replace(' ', '')}.pdf"
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    print(f"Successfully extracted pages ({pages}) to PDF: {output_path}")
+    return output_path
+
+def stamp_image_on_pdf(pdf_path, img_path, output_path=None, page_num="-1", x=350, y=80, width=150, height=60, auto_nobg=True, rotation=0):
+    """
+    Stamp an image (signature, logo, watermark, stamp) onto PDF page(s).
+    page_num: '-1' or 'last' for last page, 'all' for every page, or 1-based page number / list of numbers (e.g. '1', '1,2').
+    x, y: coordinates from bottom-left corner in points or preset strings ('bottom-right', 'bottom-left', 'center', 'top-right').
+    width, height: dimensions in points.
+    auto_nobg: if True, removes white background from signature image before stamping.
+    rotation: rotation angle in degrees.
     """
     from pypdf import PdfReader, PdfWriter
     from reportlab.pdfgen import canvas
     from reportlab.lib.utils import ImageReader
+    from PIL import Image
 
     if not os.path.exists(pdf_path):
         print(f"PDF file not found: {pdf_path}")
@@ -92,64 +250,126 @@ def stamp_image_on_pdf(pdf_path, img_path, output_path=None, page_num=-1, x=350,
         return None
 
     if output_path is None:
-        base, ext = os.path.splitext(pdf_path)
+        base, _ = os.path.splitext(pdf_path)
         output_path = f"{base}_signed.pdf"
+
+    # Pre-process image to remove white background if requested
+    stamp_img_path = img_path
+    if auto_nobg:
+        try:
+            with Image.open(img_path).convert("RGBA") as raw_img:
+                import numpy as np
+                data = np.array(raw_img)
+                r, g, b, a = data[:,:,0], data[:,:,1], data[:,:,2], data[:,:,3]
+                # Treat near-white pixels (RGB > 210) as transparent
+                white_mask = (r > 210) & (g > 210) & (b > 210)
+                data[:, :, 3][white_mask] = 0
+                clean_img = Image.fromarray(data)
+                
+                temp_nobg = f"/tmp/stamp_temp_{int(time.time())}.png"
+                clean_img.save(temp_nobg)
+                stamp_img_path = temp_nobg
+        except Exception as e:
+            stamp_img_path = img_path
 
     reader = PdfReader(pdf_path)
     total_pages = len(reader.pages)
 
-    if page_num == -1 or page_num > total_pages:
-        target_page_idx = total_pages - 1
+    # Determine targeted page indices (0-based)
+    str_p = str(page_num).lower().strip()
+    target_indices = []
+
+    if str_p in ["-1", "last"]:
+        target_indices = [total_pages - 1]
+    elif str_p in ["all", "*"]:
+        target_indices = list(range(total_pages))
     else:
-        target_page_idx = max(0, page_num - 1)
+        for part in str_p.split(","):
+            part = part.strip()
+            try:
+                val = int(part)
+                if val == -1:
+                    target_indices.append(total_pages - 1)
+                elif 1 <= val <= total_pages:
+                    target_indices.append(val - 1)
+            except ValueError:
+                pass
 
-    target_page = reader.pages[target_page_idx]
-    page_width = float(target_page.mediabox.width)
-    page_height = float(target_page.mediabox.height)
-
-    # Position presets: 'bottom-right' (default), 'bottom-left', 'center'
-    if isinstance(x, str):
-        pos = x.lower()
-        if pos == "bottom-right":
-            x = page_width - width - 50
-            y = 50
-        elif pos == "bottom-left":
-            x = 50
-            y = 50
-        elif pos == "center":
-            x = (page_width - width) / 2
-            y = (page_height - height) / 2
-        else:
-            x = page_width - width - 50
-            y = 50
-
-    packet = io.BytesIO()
-    can = canvas.Canvas(packet, pagesize=(page_width, page_height))
-    
-    img = ImageReader(img_path)
-    can.drawImage(img, float(x), float(y), width=float(width), height=float(height), mask='auto')
-    can.save()
-
-    packet.seek(0)
-    overlay_pdf = PdfReader(packet)
-    overlay_page = overlay_pdf.pages[0]
-
-    # Merge overlay image onto the target page
-    target_page.merge_page(overlay_page)
+    if not target_indices:
+        target_indices = [total_pages - 1]
 
     writer = PdfWriter()
-    for page in reader.pages:
+    img_reader = ImageReader(stamp_img_path)
+
+    for i, page in enumerate(reader.pages):
+        if i in target_indices:
+            page_width = float(page.mediabox.width)
+            page_height = float(page.mediabox.height)
+
+            calc_x, calc_y = x, y
+            if isinstance(calc_x, str):
+                pos = calc_x.lower()
+                if pos in ["bottom-right", "br"]:
+                    calc_x = page_width - width - 50
+                    calc_y = 50
+                elif pos in ["bottom-left", "bl"]:
+                    calc_x = 50
+                    calc_y = 50
+                elif pos in ["top-right", "tr"]:
+                    calc_x = page_width - width - 50
+                    calc_y = page_height - height - 50
+                elif pos in ["top-left", "tl"]:
+                    calc_x = 50
+                    calc_y = page_height - height - 50
+                elif pos in ["center", "c"]:
+                    calc_x = (page_width - width) / 2
+                    calc_y = (page_height - height) / 2
+                else:
+                    calc_x = page_width - width - 50
+                    calc_y = 50
+
+            packet = io.BytesIO()
+            can = canvas.Canvas(packet, pagesize=(page_width, page_height))
+            
+            if rotation != 0:
+                can.saveState()
+                can.translate(float(calc_x) + width/2, float(calc_y) + height/2)
+                can.rotate(float(rotation))
+                can.drawImage(img_reader, -width/2, -height/2, width=float(width), height=float(height), mask='auto')
+                can.restoreState()
+            else:
+                can.drawImage(img_reader, float(calc_x), float(calc_y), width=float(width), height=float(height), mask='auto')
+            
+            can.save()
+            packet.seek(0)
+
+            overlay_pdf = PdfReader(packet)
+            page.merge_page(overlay_pdf.pages[0])
+
         writer.add_page(page)
 
     with open(output_path, "wb") as f:
         writer.write(f)
 
-    print(f"Successfully stamped signature/image onto PDF: {output_path}")
+    # Clean temporary background-removed file if created
+    if stamp_img_path != img_path and os.path.exists(stamp_img_path):
+        try:
+            os.remove(stamp_img_path)
+        except Exception:
+            pass
+
+    print(f"Successfully stamped image onto PDF: {output_path}")
     return output_path
+
+def parse_float_arg(val, default):
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 office_tools.py <convert_pdf|extract_text|stamp_pdf> <args...>")
+        print("Usage: python3 office_tools.py <convert_pdf|extract_text|stamp_pdf|merge|split|info> <args...>")
         sys.exit(1)
         
     action = sys.argv[1]
@@ -160,15 +380,40 @@ if __name__ == "__main__":
             print(out)
     elif action == "extract_text" and len(sys.argv) > 2:
         print(extract_text(sys.argv[2]))
+    elif action == "info" and len(sys.argv) > 2:
+        print(get_doc_info(sys.argv[2]))
+    elif action == "merge" and len(sys.argv) > 3:
+        out_file = sys.argv[2] if sys.argv[2] != "-" else None
+        pdf_inputs = sys.argv[3:]
+        if not out_file and pdf_inputs:
+            out = merge_pdfs(pdf_inputs)
+        else:
+            out = merge_pdfs(pdf_inputs, output_path=out_file)
+        if out:
+            print(out)
+    elif action == "split" and len(sys.argv) > 3:
+        pdf_file = sys.argv[2]
+        pages_sel = sys.argv[3]
+        out_file = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] != "-" else None
+        out = split_pdf(pdf_file, pages=pages_sel, output_path=out_file)
+        if out:
+            print(out)
     elif action == "stamp_pdf" and len(sys.argv) > 3:
         pdf_path = sys.argv[2]
         img_path = sys.argv[3]
         output_path = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] != "-" else None
-        page_num = int(sys.argv[5]) if len(sys.argv) > 5 else -1
-        x = float(sys.argv[6]) if len(sys.argv) > 6 and sys.argv[6].replace('.','',1).isdigit() else (sys.argv[6] if len(sys.argv) > 6 else "bottom-right")
-        y = float(sys.argv[7]) if len(sys.argv) > 7 and sys.argv[7].replace('.','',1).isdigit() else 80
-        width = float(sys.argv[8]) if len(sys.argv) > 8 else 150
-        height = float(sys.argv[9]) if len(sys.argv) > 9 else 60
+        
+        page_num = sys.argv[5] if len(sys.argv) > 5 else "-1"
+
+        arg6 = sys.argv[6] if len(sys.argv) > 6 else "bottom-right"
+        try:
+            x = float(arg6)
+        except ValueError:
+            x = arg6
+
+        y = parse_float_arg(sys.argv[7] if len(sys.argv) > 7 else None, 80)
+        width = parse_float_arg(sys.argv[8] if len(sys.argv) > 8 else None, 150)
+        height = parse_float_arg(sys.argv[9] if len(sys.argv) > 9 else None, 60)
 
         out = stamp_image_on_pdf(pdf_path, img_path, output_path, page_num, x, y, width, height)
         if out:
