@@ -234,7 +234,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         for fl_name in page_files:
             ext = os.path.splitext(fl_name)[1].lower()
             icon = "📄"
-            if ext == ".pdf": icon = "📕"
+            if ext == ".pdf" or fl_name.lower().startswith("doc-"): icon = "📕"
             elif ext in [".docx", ".doc"]: icon = "📘"
             elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
             elif ext in [".pptx", ".ppt"]: icon = "📙"
@@ -292,7 +292,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         fl_key = encode_path(full_path)
         ext = os.path.splitext(item)[1].lower()
         icon = "📄"
-        if ext == ".pdf": icon = "📕"
+        if ext == ".pdf" or item.lower().startswith("doc-"): icon = "📕"
         elif ext in [".docx", ".doc"]: icon = "📘"
         elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
         elif ext in [".pptx", ".ppt"]: icon = "📙"
@@ -369,15 +369,36 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
                 pass
 
         sent_files = set()
-        target_exts = [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".csv", ".png", ".jpg"]
+        
+        # 1. Automatic file delivery for newly created/modified files
         for fname, mtime in after_files.items():
-            ext = os.path.splitext(fname)[1].lower()
-            if ext in target_exts:
-                if fname not in before_files or mtime > (before_files[fname] + 0.01):
-                    full_fpath = os.path.join(work_dir, fname)
-                    if full_fpath not in sent_files:
-                        sent_files.add(full_fpath)
-                        send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen: {fname}")
+            if fname in SYSTEM_FILES or fname.startswith("."):
+                continue
+            if fname not in before_files or mtime > (before_files[fname] + 0.01):
+                full_fpath = os.path.join(work_dir, fname)
+                if full_fpath not in sent_files:
+                    sent_files.add(full_fpath)
+                    send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen: {fname}")
+
+        # 2. Extract and send files mentioned directly in AGY output text
+        matches = re.findall(r'(?:/root/[^\s\)\"\'>]+|[a-zA-Z0-9_\-\.]+\.(?:pdf|docx|xlsx|pptx|png|jpg|txt))', output)
+        for m in matches:
+            clean_m = m.rstrip(".,;:)")
+            target_f = clean_m if clean_m.startswith("/") else os.path.join(work_dir, clean_m)
+            if os.path.exists(target_f) and os.path.isfile(target_f):
+                if target_f not in sent_files and os.path.basename(target_f) not in SYSTEM_FILES:
+                    sent_files.add(target_f)
+                    send_document(chat_id, target_f, caption=f"📄 Dokumen Terkait: {os.path.basename(target_f)}")
+
+        # 3. If user explicitly asked "kirim file" or "kirim filenya", send all recent files in work_dir!
+        if any(kw in prompt.lower() for kw in ["kirim file", "kirimkan file", "kirim filenya", "send file"]):
+            for fname in os.listdir(work_dir):
+                if fname in SYSTEM_FILES or fname.startswith("."):
+                    continue
+                full_fpath = os.path.join(work_dir, fname)
+                if os.path.isfile(full_fpath) and full_fpath not in sent_files:
+                    sent_files.add(full_fpath)
+                    send_document(chat_id, full_fpath, caption=f"📄 Dokumen: {fname}")
 
     except subprocess.TimeoutExpired:
         process.kill()
@@ -462,8 +483,8 @@ def process_callback_query(cq):
                 text += f"⚠️ Tidak dapat membaca isi file: {e}"
 
             btn_list = []
-            if ext == ".pdf":
-                btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Gambar", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
+            if ext == ".pdf" or file_name.lower().startswith("doc-"):
+                btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
             if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
                 btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
             btn_list.append([{"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"}])
@@ -637,14 +658,12 @@ def process_update(update):
             return
 
         if "TEMPEL TANDA TANGAN" in reply_text:
-            # Extract PDF name from prompt message
             match = re.search(r'pada `(.*?)`:', reply_text)
             pdf_filename = match.group(1) if match else None
             if pdf_filename:
                 pdf_path = os.path.join(current_cwd, pdf_filename)
                 img_path = os.path.join(current_cwd, user_input_name) if not user_input_name.startswith("/") else user_input_name
                 
-                # Check if photo was uploaded in reply
                 if "photo" in message:
                     photo = message["photo"][-1]
                     img_path = os.path.join(current_cwd, "signature_temp.png")
@@ -723,7 +742,7 @@ def process_update(update):
 
                 fl_key = encode_path(target_path)
                 btn_list = []
-                if ext == ".pdf":
+                if ext == ".pdf" or file_name.lower().startswith("doc-"):
                     btn_list.append([{"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"}])
                 if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".csv"]:
                     btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
@@ -849,7 +868,7 @@ def process_update(update):
             send_message(chat_id, f"❌ Exec error: {e}")
         return
 
-    # Regular prompt -> Run AGY with PDF Stamping & Office capabilities!
+    # Regular prompt -> Run AGY with PDF Stamping & Automatic File Delivery!
     res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah...\n📍 cwd: {current_cwd}")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
