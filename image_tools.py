@@ -311,6 +311,18 @@ def compress_image(img_path, quality=75, output_path=None):
         print(f"Successfully compressed image (quality={quality}): {output_path}")
         return output_path
 
+def ocr_image(img_path, lang='ind+eng'):
+    """Optical Character Recognition (OCR) to extract text from images/photos"""
+    if not os.path.exists(img_path):
+        return "File gambar tidak ditemukan."
+    try:
+        import pytesseract
+        with Image.open(img_path) as img:
+            text = pytesseract.image_to_string(img, lang=lang)
+            return text.strip() or "Tidak ada teks yang terdeteksi pada gambar."
+    except Exception as e:
+        return f"Error OCR: {e}"
+
 def get_image_info(img_path):
     """Get metadata and dimensions of an image"""
     if not os.path.exists(img_path):
@@ -373,5 +385,7 @@ if __name__ == "__main__":
     elif action == "compress":
         q = sys.argv[3] if len(sys.argv) > 3 else 75
         compress_image(img_path, quality=q)
+    elif action == "ocr":
+        print(ocr_image(img_path))
     elif action == "info":
         print(get_image_info(img_path))

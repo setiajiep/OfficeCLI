@@ -361,6 +361,43 @@ def stamp_image_on_pdf(pdf_path, img_path, output_path=None, page_num="-1", x=35
     print(f"Successfully stamped image onto PDF: {output_path}")
     return output_path
 
+def create_zip(target_path, output_zip=None):
+    """Zip a file or entire folder into a .zip archive"""
+    import zipfile
+    if not os.path.exists(target_path):
+        return None
+    if output_zip is None:
+        base = os.path.basename(os.path.abspath(target_path))
+        parent = os.path.dirname(os.path.abspath(target_path))
+        output_zip = os.path.join(parent, f"{base}.zip")
+
+    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        if os.path.isdir(target_path):
+            for root, dirs, files in os.walk(target_path):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, os.path.dirname(target_path))
+                    zipf.write(full_path, rel_path)
+        else:
+            zipf.write(target_path, os.path.basename(target_path))
+
+    print(f"Successfully created zip archive: {output_zip}")
+    return output_zip
+
+def extract_zip(zip_path, extract_dir=None):
+    """Extract a .zip archive into target directory"""
+    import zipfile
+    if not os.path.exists(zip_path):
+        return None
+    if extract_dir is None:
+        extract_dir = os.path.dirname(os.path.abspath(zip_path))
+
+    with zipfile.ZipFile(zip_path, 'r') as zipf:
+        zipf.extractall(extract_dir)
+
+    print(f"Successfully extracted zip to: {extract_dir}")
+    return extract_dir
+
 def parse_float_arg(val, default):
     try:
         return float(val)
@@ -416,5 +453,13 @@ if __name__ == "__main__":
         height = parse_float_arg(sys.argv[9] if len(sys.argv) > 9 else None, 60)
 
         out = stamp_image_on_pdf(pdf_path, img_path, output_path, page_num, x, y, width, height)
+        if out:
+            print(out)
+    elif action == "zip" and len(sys.argv) > 2:
+        out = create_zip(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
+        if out:
+            print(out)
+    elif action == "unzip" and len(sys.argv) > 2:
+        out = extract_zip(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
         if out:
             print(out)

@@ -9,6 +9,11 @@ import subprocess
 import threading
 import re
 from datetime import datetime
+import psutil
+import speech_recognition as sr
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
@@ -207,6 +212,166 @@ def send_document(chat_id, file_path, caption=None):
         except Exception as ex:
             send_message(chat_id, f"❌ Gagal mengirim document: {ex}")
 
+def send_photo(chat_id, photo_path, caption=None):
+    if not os.path.exists(photo_path):
+        send_message(chat_id, f"❌ File photo {photo_path} tidak ditemukan.")
+        return
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    filename = os.path.basename(photo_path)
+    try:
+        boundary = '----WebKitFormBoundary' + hex(int(time.time() * 1000))[2:]
+        body = bytearray()
+        
+        body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+        body.extend(f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{chat_id}\r\n'.encode('utf-8'))
+        
+        if caption:
+            body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+            body.extend(f'Content-Disposition: form-data; name="caption"\r\n\r\n{caption}\r\n'.encode('utf-8'))
+            
+        body.extend(f'--{boundary}\r\n'.encode('utf-8'))
+        body.extend(f'Content-Disposition: form-data; name="photo"; filename="{filename}"\r\n'.encode('utf-8'))
+        body.extend(b'Content-Type: image/png\r\n\r\n')
+        with open(photo_path, 'rb') as f:
+            body.extend(f.read())
+        body.extend(b'\r\n')
+        body.extend(f'--{boundary}--\r\n'.encode('utf-8'))
+        
+        req = urllib.request.Request(url, data=bytes(body), headers={'Content-Type': f'multipart/form-data; boundary={boundary}'})
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.loads(resp.read().decode('utf-8'))
+    except Exception as e:
+        print(f"Native photo upload failed ({e}), fallback to curl...", file=sys.stderr)
+        try:
+            cmd = ["curl", "-s", "-F", f"chat_id={chat_id}", "-F", f"photo=@{photo_path}"]
+            if caption:
+                cmd.extend(["-F", f"caption={caption}"])
+            cmd.append(url)
+            subprocess.run(cmd, check=True)
+        except Exception as ex:
+            send_message(chat_id, f"❌ Gagal mengirim foto: {ex}")
+
+def generate_system_chart():
+    try:
+        plt.style.use('dark_background')
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5), dpi=150)
+        fig.patch.set_facecolor('#0f172a')
+        
+        mem = psutil.virtual_memory()
+        used_gb = mem.used / (1024**3)
+        free_gb = mem.available / (1024**3)
+        
+        ax1.set_facecolor('#0f172a')
+        ax1.pie(
+            [used_gb, free_gb],
+            labels=['Used RAM', 'Free RAM'],
+            colors=['#ff4757', '#2ed573'],
+            autopct='%1.1f%%',
+            startangle=140,
+            textprops=dict(color="w", weight="bold")
+        )
+        ax1.set_title(f"RAM Usage ({mem.used/(1024**2):.0f}MB / {mem.total/(1024**2):.0f}MB)", color="cyan", fontsize=12, fontweight='bold')
+        
+        disk = psutil.disk_usage('/root')
+        d_used = disk.used / (1024**3)
+        d_free = disk.free / (1024**3)
+        
+        ax2.set_facecolor('#0f172a')
+        bars = ax2.bar(['Used GB', 'Free GB'], [d_used, d_free], color=['#ffa500', '#1e90ff'], width=0.5)
+        ax2.set_ylabel("Gigabytes (GB)", color="w")
+        ax2.set_title(f"Disk Storage ({disk.total/(1024**3):.1f} GB Total)", color="#00f2fe", fontsize=12, fontweight='bold')
+        ax2.tick_params(colors='w')
+        
+        for bar in bars:
+            yval = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width()/2.0, yval / 2, f"{yval:.1f} GB", ha='center', va='center', color='white', fontweight='bold')
+            
+        plt.tight_layout()
+        chart_path = "/tmp/vps_system_chart.png"
+        plt.savefig(chart_path, facecolor=fig.get_facecolor(), edgecolor='none')
+        plt.close()
+        return chart_path
+    except Exception as e:
+        print(f"Chart generation error: {e}")
+        return None
+
+def get_top_processes(limit=8):
+    try:
+        procs = []
+        for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info', 'username']):
+            try:
+                info = p.info
+                mem_mb = info['memory_info'].rss / (1024 * 1024) if info['memory_info'] else 0
+                procs.append({
+                    'pid': info['pid'],
+                    'name': info['name'] or 'unknown',
+                    'cpu': info['cpu_percent'] or 0.0,
+                    'mem_mb': mem_mb,
+                    'user': info['username'] or 'root'
+                })
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        procs.sort(key=lambda x: x['mem_mb'], reverse=True)
+        return procs[:limit]
+    except Exception as e:
+        print(f"Top procs error: {e}")
+        return []
+
+def transcribe_voice_note(ogg_path):
+    try:
+        wav_path = ogg_path.replace(".ogg", ".wav")
+        subprocess.run(["ffmpeg", "-y", "-i", ogg_path, "-ar", "16000", "-ac", "1", wav_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        
+        r = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio = r.record(source)
+            
+        try:
+            text = r.recognize_google(audio, language="id-ID")
+        except Exception:
+            text = r.recognize_google(audio, language="en-US")
+            
+        if os.path.exists(wav_path):
+            os.remove(wav_path)
+            
+        return text.strip()
+    except Exception as e:
+        print(f"Voice STT Error: {e}")
+        return None
+
+def read_web_page(url):
+    try:
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = "https://" + url
+            
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            html = resp.read().decode('utf-8', errors='ignore')
+            
+        title_match = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
+        title = title_match.group(1).strip() if title_match else url
+        
+        body = re.sub(r'<(script|style|svg|header|footer|nav)[^>]*>.*?</\1>', '', html, flags=re.IGNORECASE | re.DOTALL)
+        text = re.sub(r'<[^>]+>', ' ', body)
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return f"🌐 *{clean_ai_output(title)}*\n📍 URL: {url}\n━━━━━━━━━━━━━━━━━━━━━\n{clean_ai_output(text[:3500])}"
+    except Exception as e:
+        return f"❌ Gagal membaca URL {url}: {e}"
+
+def get_services_status():
+    services = ["antigravity-bot", "nginx", "docker", "ssh", "cron"]
+    status_list = []
+    for s in services:
+        try:
+            res = subprocess.run(["systemctl", "is-active", s], capture_output=True, text=True)
+            state = res.stdout.strip()
+            icon = "🟢 Active" if state == "active" else "🔴 Inactive"
+            status_list.append({"name": s, "state": state, "icon": icon})
+        except Exception:
+            pass
+    return status_list
+
 SYSTEM_FILES = ["telegram_bot.py", "office_tools.py", "image_tools.py", "setup.sh", "backup_vps.sh", "git_backup.sh", "restore.sh", "antigravity-bot.service"]
 
 def get_disk_free_gb(path="/root"):
@@ -353,14 +518,17 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     
     inline_keyboard.append([
         {"text": "➕ Folder Baru", "callback_data": "fm_action:create_folder_prompt"},
-        {"text": "📝 File Baru", "callback_data": "fm_action:create_file_prompt"}
+        {"text": "📝 File Baru", "callback_data": "fm_action:create_file_prompt"},
+        {"text": "📦 Zip Folder Ini", "callback_data": "fm_action:zip_cwd"}
     ])
     inline_keyboard.append([
-        {"text": "📂 MyProject Home", "callback_data": f"fm_cd:{myproject_key}:1"},
+        {"text": "📂 MyProject", "callback_data": f"fm_cd:{myproject_key}:1"},
         {"text": "📊 Status VPS", "callback_data": "fm_action:view_status"},
-        {"text": "📦 Backup VPS", "callback_data": "fm_action:do_backup"}
+        {"text": "📈 Chart VPS", "callback_data": "fm_action:view_chart"},
+        {"text": "⚡ Processes", "callback_data": "fm_action:view_procs"}
     ])
     inline_keyboard.append([
+        {"text": "📦 Backup VPS", "callback_data": "fm_action:do_backup"},
         {"text": toggle_hidden_text, "callback_data": "fm_action:toggle_hidden"}
     ])
 
@@ -599,6 +767,9 @@ def process_callback_query(cq):
                     {"text": "🔄 Convert ke PNG", "callback_data": f"img_action:conv_png:{fl_key}"},
                     {"text": "📕 Convert ke PDF", "callback_data": f"img_action:conv_pdf:{fl_key}"}
                 ])
+                btn_list.append([
+                    {"text": "🔍 OCR Teks Gambar", "callback_data": f"img_action:ocr:{fl_key}"}
+                ])
             else:
                 if ext == ".pdf" or file_name.lower().startswith("doc-"):
                     btn_list.append([
@@ -607,7 +778,14 @@ def process_callback_query(cq):
                     ])
                 if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
                     btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
-                btn_list.append([{"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"}])
+                if ext == ".zip":
+                    btn_list.append([{"text": "📂 Extract File ZIP", "callback_data": f"fm_action:unzip:{fl_key}"}])
+                
+                btn_list.append([
+                    {"text": "🔍 Extract Text", "callback_data": f"fm_extract_text:{fl_key}"},
+                    {"text": "🤖 AI Summarize", "callback_data": f"fm_action:ai_summary:{fl_key}"}
+                ])
+                btn_list.append([{"text": "📦 Compress ke ZIP", "callback_data": f"fm_action:zip_item:{fl_key}"}])
 
             btn_list.append([{"text": "📥 Download File", "callback_data": f"fm_dl:{fl_key}"}])
             btn_list.append([{"text": "🗑️ Hapus File Ini", "callback_data": f"fm_rm_confirm:{fl_key}"}])
@@ -623,7 +801,16 @@ def process_callback_query(cq):
         file_path = decode_path(fl_key)
         file_name = os.path.basename(file_path)
 
-        if sub_action == "rotate":
+        if sub_action == "ocr":
+            answer_callback_query(cq_id, "🔍 Membaca Teks (OCR)...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "ocr", file_path], capture_output=True, text=True)
+                extracted_ocr = res.stdout.strip() if res.stdout else "Tidak ada teks yang terdeteksi."
+                send_message(chat_id, f"🔍 HASIL OCR TEKS GAMBAR ({file_name}):\n━━━━━━━━━━━━━━━━━━━━━\n{clean_ai_output(extracted_ocr)[:3800]}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal OCR: {e}")
+
+        elif sub_action == "rotate":
             answer_callback_query(cq_id, "🔄 Memutar gambar 90°...")
             try:
                 res = subprocess.run(["python3", IMAGE_TOOLS, "rotate", file_path, "90"], capture_output=True, text=True)
@@ -795,6 +982,18 @@ def process_callback_query(cq):
         msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1, notice=notice)
         edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup)
 
+    elif data.startswith("proc_kill:"):
+        pid_str = data.split("proc_kill:", 1)[1]
+        try:
+            pid = int(pid_str)
+            p = psutil.Process(pid)
+            p_name = p.name()
+            p.terminate()
+            answer_callback_query(cq_id, f"🔥 Process PID {pid} ({p_name}) di-terminate!", show_alert=True)
+            send_message(chat_id, f"🔥 Process PID `{pid}` ({p_name}) berhasil di-terminate.")
+        except Exception as e:
+            answer_callback_query(cq_id, f"❌ Gagal kill PID {pid_str}: {e}", show_alert=True)
+
     elif data.startswith("fm_action:"):
         action = data.split("fm_action:", 1)[1]
         if action == "noop":
@@ -813,6 +1012,86 @@ def process_callback_query(cq):
                 "🤖 *Bot Controller:* Active (@Kontrolagybot)"
             )
             send_message(chat_id, status_text, parse_mode="Markdown")
+        elif action == "view_chart":
+            answer_callback_query(cq_id, "📈 Membuat Chart Analytics VPS...")
+            chart_file = generate_system_chart()
+            if chart_file and os.path.exists(chart_file):
+                send_photo(chat_id, chart_file, caption="📈 *DYNAMIC VPS ANALYTICS DASHBOARD*\nReal-time RAM Usage & Disk Allocation")
+            else:
+                send_message(chat_id, "❌ Gagal membuat chart visual.")
+
+        elif action == "view_procs":
+            answer_callback_query(cq_id, "⚡ Memuat Process Manager...")
+            procs = get_top_processes(limit=8)
+            msg = "⚡ *PROCESS MANAGER (TOP MEMORY & CPU)*\n━━━━━━━━━━━━━━━━━━━━━\n"
+            btn_rows = []
+            for p in procs:
+                msg += f"• `PID {p['pid']}`: *{p['name']}* | RAM: `{p['mem_mb']:.1f}MB` | CPU: `{p['cpu']:.1f}%`\n"
+                btn_rows.append([{"text": f"⚡ Kill PID {p['pid']} ({p['name'][:12]})", "callback_data": f"proc_kill:{p['pid']}"}])
+            
+            btn_rows.append([{"text": "🔄 Refresh Processes", "callback_data": "fm_action:view_procs"}])
+            send_message(chat_id, msg, reply_markup={"inline_keyboard": btn_rows}, parse_mode="Markdown")
+
+        elif action.startswith("ai_summary:"):
+            fl_key = action.split("ai_summary:", 1)[1]
+            file_path = decode_path(fl_key)
+            file_name = os.path.basename(file_path)
+            answer_callback_query(cq_id, "🤖 Menyiapkan AI Summary...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "extract_text", file_path], capture_output=True, text=True)
+                doc_text = res.stdout or ""
+                if not doc_text.strip():
+                    send_message(chat_id, f"❌ Dokumen `{file_name}` kosong atau teks tidak terbaca.")
+                    return
+
+                prompt = f"Tolong ringkas dokumen '{file_name}' ini secara eksekutif, sertakan poin-poin utama dan data penting.\n\nISITEKS DOKUMEN:\n{doc_text[:6000]}"
+                res_msg = send_message(chat_id, f"🤖 Antigravity menganalisa & meringkas `{file_name}`...")
+                if res_msg and len(res_msg) > 0:
+                    status_msg_id = res_msg[0]["message_id"]
+                    t = threading.Thread(target=execute_antigravity, args=(prompt, chat_id, status_msg_id, current_cwd))
+                    t.start()
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal AI Summary: {e}")
+
+        elif action == "zip_cwd":
+            answer_callback_query(cq_id, "📦 Membuat file ZIP folder...")
+            send_message(chat_id, f"📦 Mengompres folder `{os.path.basename(current_cwd)}` ke ZIP...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "zip", current_cwd], capture_output=True, text=True)
+                out_zip = res.stdout.strip()
+                if out_zip and os.path.exists(out_zip):
+                    send_document(chat_id, out_zip, caption=f"📦 Hasil Zip Archive: {os.path.basename(out_zip)}")
+                else:
+                    send_message(chat_id, f"❌ Gagal zip folder: {res.stderr}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Error zip: {e}")
+
+        elif action.startswith("zip_item:"):
+            fl_key = action.split("zip_item:", 1)[1]
+            target_path = decode_path(fl_key)
+            answer_callback_query(cq_id, "📦 Mengompres ke ZIP...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "zip", target_path], capture_output=True, text=True)
+                out_zip = res.stdout.strip()
+                if out_zip and os.path.exists(out_zip):
+                    send_document(chat_id, out_zip, caption=f"📦 Hasil Zip Archive: {os.path.basename(out_zip)}")
+                else:
+                    send_message(chat_id, f"❌ Gagal zip: {res.stderr}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Error zip: {e}")
+
+        elif action.startswith("unzip:"):
+            fl_key = action.split("unzip:", 1)[1]
+            zip_path = decode_path(fl_key)
+            answer_callback_query(cq_id, "📂 Mengekstrak ZIP...")
+            send_message(chat_id, f"📂 Mengekstrak `{os.path.basename(zip_path)}` ke `{current_cwd}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "unzip", zip_path, current_cwd], capture_output=True, text=True)
+                msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1, notice=f"✅ ZIP {os.path.basename(zip_path)} berhasil diekstrak!")
+                send_message(chat_id, msg_text, reply_markup=reply_markup)
+            except Exception as e:
+                send_message(chat_id, f"❌ Error unzip: {e}")
+
         elif action == "toggle_hidden":
             new_state = toggle_show_hidden(user_id)
             state_str = "ditampilkan" if new_state else "disembunyikan"
@@ -965,6 +1244,35 @@ def process_update(update):
                     send_message(chat_id, f"❌ Gambar tanda tangan `{user_input_name}` tidak ditemukan di `{current_cwd}`.")
             return
 
+    # Handle Voice Note / Voice Commands
+    if "voice" in message or "audio" in message:
+        voice_obj = message.get("voice") or message.get("audio")
+        file_id = voice_obj["file_id"]
+        ogg_path = f"/tmp/voice_{int(time.time())}.ogg"
+        res = api_request("getFile", {"file_id": file_id})
+        if res and res.get("ok"):
+            file_rel_path = res["result"]["file_path"]
+            dl_url = f"https://api.telegram.org/file/bot{TOKEN}/{file_rel_path}"
+            try:
+                urllib.request.urlretrieve(dl_url, ogg_path)
+                send_message(chat_id, "🎙️ Memproses pesan suara & transkrip ke teks...")
+                voice_text = transcribe_voice_note(ogg_path)
+                if voice_text:
+                    full_prompt = f"{voice_text}"
+                    res_msg = send_message(chat_id, f"🎙️ *PERINTAH SUARA TERDETEKSI:*\n`\"{voice_text}\"`\n\n🤖 Antigravity AI mengeksekusi instruksi...", parse_mode="Markdown")
+                    if res_msg and len(res_msg) > 0:
+                        status_msg_id = res_msg[0]["message_id"]
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd))
+                        t.start()
+                else:
+                    send_message(chat_id, "⚠️ Gagal mengonversi pesan suara menjadi teks.")
+            except Exception as e:
+                send_message(chat_id, f"❌ Error voice processing: {e}")
+            finally:
+                if os.path.exists(ogg_path):
+                    os.remove(ogg_path)
+        return
+
     # Handle Photo/Image Uploads (with optional Caption Instruction!)
     if "photo" in message:
         photo = message["photo"][-1]
@@ -1113,30 +1421,95 @@ def process_update(update):
         send_message(chat_id, status_text, parse_mode="Markdown")
         return
 
+    if text in ["/chart", "/syschart"]:
+        send_message(chat_id, "📈 Sedang membuat chart analytics VPS...")
+        chart_file = generate_system_chart()
+        if chart_file and os.path.exists(chart_file):
+            send_photo(chat_id, chart_file, caption="📈 *DYNAMIC VPS ANALYTICS DASHBOARD*\nReal-time RAM Usage & Disk Allocation")
+        else:
+            send_message(chat_id, "❌ Gagal membuat chart visual.")
+        return
+
+    if text in ["/top", "/ps", "/procs"]:
+        procs = get_top_processes(limit=8)
+        msg = "⚡ *PROCESS MANAGER (TOP MEMORY & CPU)*\n━━━━━━━━━━━━━━━━━━━━━\n"
+        btn_rows = []
+        for p in procs:
+            msg += f"• `PID {p['pid']}`: *{p['name']}* | RAM: `{p['mem_mb']:.1f}MB` | CPU: `{p['cpu']:.1f}%`\n"
+            btn_rows.append([{"text": f"⚡ Kill PID {p['pid']} ({p['name'][:12]})", "callback_data": f"proc_kill:{p['pid']}"}])
+        
+        btn_rows.append([{"text": "🔄 Refresh Processes", "callback_data": "fm_action:view_procs"}])
+        send_message(chat_id, msg, reply_markup={"inline_keyboard": btn_rows}, parse_mode="Markdown")
+        return
+
+    if text in ["/services", "/service"]:
+        svcs = get_services_status()
+        msg = "🛠️ *SYSTEM SERVICES STATUS*\n━━━━━━━━━━━━━━━━━━━━━\n"
+        for s in svcs:
+            msg += f"• *{s['name']}*: {s['icon']} (`{s['state']}`)\n"
+        send_message(chat_id, msg, parse_mode="Markdown")
+        return
+
+    if text.startswith("/web "):
+        url = text[5:].strip()
+        send_message(chat_id, f"🌐 Membaca halaman web `{url}`...")
+        res = read_web_page(url)
+        send_message(chat_id, res, parse_mode="Markdown")
+        return
+
+    if text.startswith("/zip "):
+        target_name = text[5:].strip()
+        target_path = os.path.join(current_cwd, target_name) if not target_name.startswith("/") else target_name
+        send_message(chat_id, f"📦 Mengompres `{os.path.basename(target_path)}` ke ZIP...")
+        try:
+            res = subprocess.run(["python3", OFFICE_TOOLS, "zip", target_path], capture_output=True, text=True)
+            out_zip = res.stdout.strip()
+            if out_zip and os.path.exists(out_zip):
+                send_document(chat_id, out_zip, caption=f"📦 Hasil Zip Archive: {os.path.basename(out_zip)}")
+            else:
+                send_message(chat_id, f"❌ Gagal zip: {res.stderr}")
+        except Exception as e:
+            send_message(chat_id, f"❌ Error zip: {e}")
+        return
+
+    if text.startswith("/unzip "):
+        zip_name = text[7:].strip()
+        zip_path = os.path.join(current_cwd, zip_name) if not zip_name.startswith("/") else zip_name
+        send_message(chat_id, f"📂 Mengekstrak `{os.path.basename(zip_path)}` ke `{current_cwd}`...")
+        try:
+            res = subprocess.run(["python3", OFFICE_TOOLS, "unzip", zip_path, current_cwd], capture_output=True, text=True)
+            msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1, notice=f"✅ ZIP {os.path.basename(zip_path)} berhasil diekstrak!")
+            send_message(chat_id, msg_text, reply_markup=reply_markup)
+        except Exception as e:
+            send_message(chat_id, f"❌ Error unzip: {e}")
+        return
+
     if text in ["/help", "/bantuan"]:
         help_txt = (
-            "🏢 *OFFICE CLI & PHOTO SUITE CONTROLLER*\n"
+            "🏢 *OFFICE CLI, PHOTO SUITE & AI CONTROLLER*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "📂 *MANAJEMEN FILE:*\n"
-            "• `/fm` atau `/ls` : Buka File Manager interaktif\n"
+            "🎙️ *PERINTAH SUARA (VOICE COMMANDS):*\n"
+            "• Kirim *Voice Note / Pesan Suara* langsung ke Telegram! Sistem akan mentranskrip ucapan Anda dan langsung mengeksekusi instruksi secara otomatis lewat AI Antigravity.\n\n"
+            "📊 *SYSTEM & MONITORING:*\n"
             "• `/status` atau `/sys` : Dashboard RAM, CPU & Disk VPS\n"
+            "• `/chart` : Grafik visual real-time statistik RAM & Disk\n"
+            "• `/top` atau `/ps` : Process Manager (dengan tombol terminate PID)\n"
+            "• `/services` : Service Systemd Manager\n"
+            "• `/web <url>` : Scraper / Reader Teks Halaman Web\n\n"
+            "📂 *MANAJEMEN FILE & ARCHIVE:*\n"
+            "• `/fm` atau `/ls` : File Manager interaktif\n"
             "• `/cd <path>` : Pindah direktori kerja\n"
             "• `/pwd` : Tampilkan lokasi folder saat ini\n"
-            "• `/mkdir <nama>` : Buat folder baru\n"
-            "• `/touch <nama>` : Buat file kosong baru\n"
-            "• `/rm <nama>` : Hapus file atau folder\n"
-            "• `/rename <lama> <baru>` : Ganti nama file/folder\n"
-            "• `/download <file>` : Unduh file langsung ke chat\n"
-            "• `/merge <output.pdf> <file1.pdf> <file2.pdf>` : Penggabungan PDF\n"
-            "• `/exec <cmd>` : Jalankan perintah terminal Bash\n"
-            "• `/backup` : Trigger backup otomatis ke GitHub & Telegram\n\n"
-            "🖼️ *PHOTO & MEDIA EDITOR:*\n"
-            "• Upload foto untuk akses tombol editor (Rotate, Flip, Auto-Crop, Filter, Watermark Bottom/Diagonal, Hapus Background, Kompres, Convert PNG/PDF).\n"
-            "• Kamu juga bisa memberi instruksi edit langsung di *Caption* foto saat diupload!\n\n"
+            "• `/mkdir <nama>` | `/touch <nama>` | `/rm <nama>` | `/rename <lama> <baru>`\n"
+            "• `/zip <target>` | `/unzip <file.zip>`\n"
+            "• `/download <file>` | `/merge <out.pdf> <file1.pdf> <file2.pdf>`\n"
+            "• `/exec <cmd>` : Perintah terminal Bash\n"
+            "• `/backup` : Trigger backup VPS ke GitHub & Telegram\n\n"
+            "🖼️ *PHOTO, OCR & MEDIA EDITOR:*\n"
+            "• Upload foto untuk Rotate, Flip, Auto-Crop, Filter, Watermark, Hapus Background, Kompres, Convert, dan *🔍 OCR Baca Teks Gambar*.\n"
+            "• Berikan instruksi edit langsung pada *Caption* foto/dokumen saat diupload!\n\n"
             "📕 *OFFICE & DOKUMEN SUITE:*\n"
-            "• Upload PDF / Word / PowerPoint / Excel / Text untuk konversi ke PDF, penggabungan / ekstraksi halaman PDF, ekstraksi teks, atau penempelan Tanda Tangan & Stempel.\n\n"
-            "🤖 *AI ANTIGRAVITY CONTROLLER:*\n"
-            "• Ketik pesan teks biasa apa saja untuk memunculkan Agen AI Antigravity untuk pengerjaan tugas otomatis!"
+            "• Konversi ke PDF, Penggabungan/Ekstraksi Halaman PDF, Ekstraksi Teks, *🤖 AI Summarize Dokumen*, atau Tempel Tanda Tangan & Stempel."
         )
         send_message(chat_id, help_txt, parse_mode="Markdown")
         return
