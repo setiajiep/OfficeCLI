@@ -1,0 +1,19 @@
+[Unit]
+Description=Antigravity Telegram Bot Controller Service
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/bin/python3 /root/telegram_bot.py
+Restart=always
+RestartSec=3s
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/environment
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

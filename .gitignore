@@ -1,0 +1,12 @@
+.cache/
+.gemini/
+.local/
+.ssh/
+.env
+.config/
+GoogleDrive/
+node_modules/
+*.log
+tmp/
+/tmp/
+.npm/
