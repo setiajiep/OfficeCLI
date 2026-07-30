@@ -315,26 +315,39 @@ def process_media_download(url, chat_id, media_type="video", quality="best"):
     try:
         if media_type == "video":
             res = subprocess.run(["python3", MEDIA_DOWNLOADER, "video", url, quality], capture_output=True, text=True)
-            file_path = res.stdout.strip()
+            raw_out = res.stdout.strip()
+            paths = [l.strip() for l in raw_out.splitlines() if l.strip().startswith("/")]
+            file_path = paths[-1] if paths else ""
+            
             if file_path and os.path.exists(file_path):
-                send_video(chat_id, file_path, caption=f"📹 Video Downloaded ({quality})")
+                sz_mb = os.path.getsize(file_path) / (1024 * 1024)
+                if sz_mb > 49.0:
+                    send_message(chat_id, f"⚠️ Ukuran file video ({sz_mb:.1f} MB) melebihi batas 50MB Telegram API.")
+                
+                send_video(chat_id, file_path, caption=f"📹 Video Downloaded ({quality}) | {sz_mb:.1f}MB")
                 try:
                     os.remove(file_path)
                 except Exception:
                     pass
             else:
-                send_message(chat_id, f"❌ Gagal mengunduh video: {res.stderr}")
+                err_msg = res.stderr.strip() or "File hasil download tidak ditemukan."
+                send_message(chat_id, f"❌ Gagal mengunduh video: {err_msg}")
         else:
             res = subprocess.run(["python3", MEDIA_DOWNLOADER, "audio", url, quality], capture_output=True, text=True)
-            file_path = res.stdout.strip()
+            raw_out = res.stdout.strip()
+            paths = [l.strip() for l in raw_out.splitlines() if l.strip().startswith("/")]
+            file_path = paths[-1] if paths else ""
+            
             if file_path and os.path.exists(file_path):
-                send_audio(chat_id, file_path, caption=f"🎵 Audio Downloaded ({quality})")
+                sz_mb = os.path.getsize(file_path) / (1024 * 1024)
+                send_audio(chat_id, file_path, caption=f"🎵 Audio Downloaded ({quality}) | {sz_mb:.1f}MB")
                 try:
                     os.remove(file_path)
                 except Exception:
                     pass
             else:
-                send_message(chat_id, f"❌ Gagal mengunduh audio: {res.stderr}")
+                err_msg = res.stderr.strip() or "File hasil download tidak ditemukan."
+                send_message(chat_id, f"❌ Gagal mengunduh audio: {err_msg}")
     except Exception as e:
         send_message(chat_id, f"❌ Error download: {e}")
 

@@ -74,7 +74,7 @@ def download_video(url, quality="best", output_dir="/tmp"):
             if f.startswith("video_") and (f.endswith(".mp4") or f.endswith(".mkv") or f.endswith(".webm")):
                 full_p = os.path.join(output_dir, f)
                 if os.path.getmtime(full_p) > (time.time() - 310):
-                    print(f"Successfully downloaded video: {full_p}")
+                    print(f"Downloaded video: {full_p}", file=sys.stderr)
                     return full_p
     except Exception as e:
         print(f"Video download failed: {e}", file=sys.stderr)
@@ -103,7 +103,7 @@ def download_audio(url, audio_format="mp3", output_dir="/tmp"):
             if f.startswith("audio_") and (f.endswith(target_ext) or f.endswith(".mp3") or f.endswith(".m4a")):
                 full_p = os.path.join(output_dir, f)
                 if os.path.getmtime(full_p) > (time.time() - 310):
-                    print(f"Successfully downloaded audio: {full_p}")
+                    print(f"Downloaded audio: {full_p}", file=sys.stderr)
                     return full_p
     except Exception as e:
         print(f"Audio download failed: {e}", file=sys.stderr)
