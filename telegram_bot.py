@@ -855,6 +855,10 @@ def process_callback_query(cq):
                     {"text": "🏷️ Watermark Diagonal", "callback_data": f"img_action:wm_diag_prompt:{fl_key}"}
                 ])
                 btn_list.append([
+                    {"text": "📸 Pas Foto Merah 3x4", "callback_data": f"img_action:pasfoto_red_3x4:{fl_key}"},
+                    {"text": "📸 Pas Foto Biru 3x4", "callback_data": f"img_action:pasfoto_blue_3x4:{fl_key}"}
+                ])
+                btn_list.append([
                     {"text": "✂️ Hapus Background", "callback_data": f"img_action:nobg:{fl_key}"},
                     {"text": "⚡ Kompres Foto", "callback_data": f"img_action:compress:{fl_key}"}
                 ])
@@ -871,6 +875,11 @@ def process_callback_query(cq):
                         {"text": "✍️ Tempel Tanda Tangan / Stempel", "callback_data": f"fm_stamp_prompt:{fl_key}"},
                         {"text": "✂️ Extract Halaman PDF", "callback_data": f"fm_split_pdf_prompt:{fl_key}"}
                     ])
+                    btn_list.append([
+                        {"text": "🔒 Protect Password PDF", "callback_data": f"fm_action:protect_pdf:{fl_key}"},
+                        {"text": "⚡ Kompres Ukuran PDF", "callback_data": f"fm_action:compress_pdf:{fl_key}"}
+                    ])
+
                 if ext in [".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".html"]:
                     btn_list.append([{"text": "📕 Convert ke PDF", "callback_data": f"fm_convert_pdf:{fl_key}"}])
                 if ext == ".zip":
@@ -981,6 +990,20 @@ def process_callback_query(cq):
                 send_document(chat_id, out_path, caption=f"⚡ Hasil Kompresi Foto: {os.path.basename(out_path)}")
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal kompres foto: {e}")
+
+        elif sub_action.startswith("pasfoto_"):
+            parts = sub_action.split("_")
+            bg_col = parts[1]
+            sz = parts[2]
+            answer_callback_query(cq_id, f"📸 Pas Foto ({sz}, {bg_col.title()})...")
+            send_message(chat_id, f"📸 Membuat Pas Foto Formal ({sz}, BG {bg_col.title()}) dari `{file_name}`...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "pas_foto", file_path, sz, bg_col], capture_output=True, text=True)
+                out_path = res.stdout.strip().split()[-1] if res.stdout else file_path
+                send_document(chat_id, out_path, caption=f"📸 Hasil Pas Foto Formal ({sz.upper()}, BG {bg_col.title()}): {os.path.basename(out_path)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat pas foto: {e}")
+
 
         elif sub_action == "wm_prompt":
             answer_callback_query(cq_id, "🏷️ Watermark Text")
@@ -1194,6 +1217,30 @@ def process_callback_query(cq):
             except Exception as e:
                 send_message(chat_id, f"❌ Error zip: {e}")
 
+        elif action.startswith("compress_pdf:"):
+            fl_key = action.split("compress_pdf:", 1)[1]
+            pdf_path = decode_path(fl_key)
+            answer_callback_query(cq_id, "⚡ Mengompres PDF...")
+            send_message(chat_id, f"⚡ Mengompres file PDF `{os.path.basename(pdf_path)}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "compress_pdf", pdf_path], capture_output=True, text=True)
+                out_pdf = res.stdout.strip().split()[-1] if res.stdout else pdf_path
+                send_document(chat_id, out_pdf, caption=f"⚡ Hasil Kompresi PDF: {os.path.basename(out_pdf)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal mengompres PDF: {e}")
+
+        elif action.startswith("protect_pdf:"):
+            fl_key = action.split("protect_pdf:", 1)[1]
+            pdf_path = decode_path(fl_key)
+            answer_callback_query(cq_id, "🔒 Melindungi PDF...")
+            send_message(chat_id, f"🔒 Menambahkan kata sandi pada `{os.path.basename(pdf_path)}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "protect_pdf", pdf_path, "123456"], capture_output=True, text=True)
+                out_pdf = res.stdout.strip().split()[-1] if res.stdout else pdf_path
+                send_document(chat_id, out_pdf, caption=f"🔒 Hasil Protect PDF (Password: 123456): {os.path.basename(out_pdf)}")
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal protect PDF: {e}")
+
         elif action.startswith("unzip:"):
             fl_key = action.split("unzip:", 1)[1]
             zip_path = decode_path(fl_key)
@@ -1205,6 +1252,7 @@ def process_callback_query(cq):
                 send_message(chat_id, msg_text, reply_markup=reply_markup)
             except Exception as e:
                 send_message(chat_id, f"❌ Error unzip: {e}")
+
 
         elif action == "toggle_hidden":
             new_state = toggle_show_hidden(user_id)

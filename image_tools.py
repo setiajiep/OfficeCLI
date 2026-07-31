@@ -427,6 +427,111 @@ def doc_scanner_effect(img_path, output_path=None):
     print(f"✅ Efek Scanner dokumen berhasil diterapkan: {output_path}")
     return output_path
 
+def create_pas_foto(img_path, size='3x4', bg_color='red', output_path=None):
+    """
+    Generate formal Indonesian Pas Foto (2x3, 3x4, 4x6, passport)
+    with instant Red (#DB1514) or Blue (#0B4FA8) background replacement & standard aspect ratio cropping.
+    """
+    if not os.path.exists(img_path):
+        print(f"❌ File foto tidak ditemukan: {img_path}")
+        return None
+
+    SIZE_MAP = {
+        "2x3": (236, 354),
+        "3x4": (354, 472),
+        "4x6": (472, 709),
+        "passport": (413, 531)
+    }
+    COLOR_MAP = {
+        "red": (219, 21, 20),      # #DB1514 Formal Red
+        "blue": (11, 79, 168),     # #0B4FA8 Formal Blue
+        "white": (255, 255, 255),
+        "grey": (180, 180, 180)
+    }
+
+    target_w, target_h = SIZE_MAP.get(str(size).lower(), (354, 472))
+    bg_rgb = COLOR_MAP.get(str(bg_color).lower(), (219, 21, 20))
+
+    if output_path is None:
+        base, _ = os.path.splitext(img_path)
+        output_path = f"{base}_pasfoto_{size}_{bg_color}.jpg"
+
+    img_cv = cv2.imread(img_path)
+    if img_cv is None:
+        return None
+
+    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    _, alpha_mask = cv2.threshold(blurred, 220, 255, cv2.THRESH_BINARY_INV)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    alpha_mask = cv2.morphologyEx(alpha_mask, cv2.MORPH_CLOSE, kernel)
+    alpha_mask = cv2.GaussianBlur(alpha_mask, (3, 3), 0)
+
+    h_orig, w_orig = img_cv.shape[:2]
+    bg_canvas = np.zeros((h_orig, w_orig, 3), dtype=np.uint8)
+    bg_canvas[:] = (bg_rgb[2], bg_rgb[1], bg_rgb[0])
+
+    alpha_norm = alpha_mask.astype(float) / 255.0
+    alpha_3d = np.dstack([alpha_norm, alpha_norm, alpha_norm])
+
+    result_bgr = (img_cv * alpha_3d + bg_canvas * (1 - alpha_3d)).astype(np.uint8)
+
+    target_ratio = target_w / target_h
+    current_ratio = w_orig / h_orig
+
+    if current_ratio > target_ratio:
+        new_w = int(h_orig * target_ratio)
+        offset_x = (w_orig - new_w) // 2
+        cropped = result_bgr[0:h_orig, offset_x:offset_x + new_w]
+    else:
+        new_h = int(w_orig / target_ratio)
+        offset_y = (h_orig - new_h) // 2
+        cropped = result_bgr[offset_y:offset_y + new_h, 0:w_orig]
+
+    final_pasfoto = cv2.resize(cropped, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
+    cv2.imwrite(output_path, final_pasfoto)
+    print(f"✅ Pas Foto Formal ({size.upper()}, BG: {bg_color.title()}) berhasil dibuat: {output_path}")
+    return output_path
+
+def batch_process_images(folder_path, action="compress", output_dir=None, **kwargs):
+    """Batch process all images in a folder (compress, watermark, convert, pas_foto)"""
+    if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+        print(f"❌ Folder tidak ditemukan: {folder_path}")
+        return []
+
+    if output_dir is None:
+        output_dir = os.path.join(folder_path, f"batch_{action}_{int(time.time())}")
+    os.makedirs(output_dir, exist_ok=True)
+
+    valid_exts = ['.png', '.jpg', '.jpeg', '.webp', '.bmp']
+    processed_files = []
+
+    for fname in sorted(os.listdir(folder_path)):
+        ext = os.path.splitext(fname)[1].lower()
+        if ext in valid_exts:
+            src_file = os.path.join(folder_path, fname)
+            out_file = os.path.join(output_dir, fname)
+
+            if action == "compress":
+                res = compress_image(src_file, output_path=out_file, quality=kwargs.get("quality", 75))
+            elif action == "watermark":
+                res = add_watermark(src_file, text=kwargs.get("text", "WATERMARK"), output_path=out_file)
+            elif action == "nobg":
+                res = remove_bg(src_file, output_path=out_file)
+            elif action == "pas_foto":
+                res = create_pas_foto(src_file, size=kwargs.get("size", "3x4"), bg_color=kwargs.get("bg_color", "red"), output_path=out_file)
+            else:
+                res = convert_format(src_file, target_ext=action, output_path=out_file)
+
+            if res and os.path.exists(res):
+                processed_files.append(res)
+
+    print(f"✅ Batch pemrosesan selesai! {len(processed_files)} foto diproses di: {output_dir}")
+    return processed_files
+
+
 # ---------------------------------------------------------
 # CLI Main Function
 # ---------------------------------------------------------
@@ -526,11 +631,20 @@ Gunakan flag --send-telegram atau -t untuk pengiriman otomatis.
         txt = args[1]
         out = args[2] if len(args) > 2 else None
         result_file = create_qr(text=txt, output_path=out)
+    elif action == "pas_foto" and len(args) > 1:
+        sz = args[2] if len(args) > 2 else "3x4"
+        bg = args[3] if len(args) > 3 else "red"
+        out = args[4] if len(args) > 4 else None
+        result_file = create_pas_foto(img_path, size=sz, bg_color=bg, output_path=out)
+    elif action == "batch_img" and len(args) > 1:
+        act = args[2] if len(args) > 2 else "compress"
+        batch_process_images(img_path, action=act)
     elif action == "ocr" and len(args) > 1:
         print(ocr_image(img_path))
     elif action == "info" and len(args) > 1:
         import json
         print(json.dumps(get_image_info(img_path), indent=2))
+
 
     # Prompt user or send to Telegram if a result file was generated
     if result_file and os.path.exists(result_file):

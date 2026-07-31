@@ -407,6 +407,133 @@ def add_watermark_to_pdf(pdf_path, text="CONFIDENTIAL", output_path=None):
     print(f"✅ Watermark teks berhasil ditambahkan: {output_path}")
     return output_path
 
+def protect_pdf(pdf_path, password="123", output_path=None):
+    """Password protect / encrypt a PDF file"""
+    from pypdf import PdfReader, PdfWriter
+    if not os.path.exists(pdf_path):
+        print(f"❌ File PDF tidak ditemukan: {pdf_path}")
+        return None
+
+    if output_path is None:
+        base, _ = os.path.splitext(pdf_path)
+        output_path = f"{base}_protected.pdf"
+
+    reader = PdfReader(pdf_path)
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    writer.encrypt(password)
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    print(f"✅ PDF berhasil dilindungi kata sandi: {output_path}")
+    return output_path
+
+def unprotect_pdf(pdf_path, password="123", output_path=None):
+    """Remove password encryption from a PDF file"""
+    from pypdf import PdfReader, PdfWriter
+    if not os.path.exists(pdf_path):
+        print(f"❌ File PDF tidak ditemukan: {pdf_path}")
+        return None
+
+    if output_path is None:
+        base, _ = os.path.splitext(pdf_path)
+        output_path = f"{base}_unlocked.pdf"
+
+    reader = PdfReader(pdf_path)
+    if reader.is_encrypted:
+        reader.decrypt(password)
+
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    print(f"✅ Kata sandi PDF berhasil dibuka: {output_path}")
+    return output_path
+
+def compress_pdf(pdf_path, output_path=None):
+    """Compress PDF streams & reduce file size"""
+    from pypdf import PdfReader, PdfWriter
+    if not os.path.exists(pdf_path):
+        print(f"❌ File PDF tidak ditemukan: {pdf_path}")
+        return None
+
+    if output_path is None:
+        base, _ = os.path.splitext(pdf_path)
+        output_path = f"{base}_compressed.pdf"
+
+    reader = PdfReader(pdf_path)
+    writer = PdfWriter()
+    for page in reader.pages:
+        page.compress_content_streams()
+        writer.add_page(page)
+
+    with open(output_path, "wb") as f:
+        writer.write(f)
+
+    orig_sz = os.path.getsize(pdf_path) / 1024
+    new_sz = os.path.getsize(output_path) / 1024
+    print(f"✅ PDF berhasil dikompres: {output_path} ({orig_sz:.1f} KB -> {new_sz:.1f} KB)")
+    return output_path
+
+def pdf_to_images(pdf_path, output_dir=None):
+    """Convert each page of a PDF file into PNG images"""
+    from PIL import Image
+    if not os.path.exists(pdf_path):
+        print(f"❌ File PDF tidak ditemukan: {pdf_path}")
+        return []
+
+    if output_dir is None:
+        base = os.path.basename(pdf_path).replace(".pdf", "")
+        output_dir = os.path.join(os.path.dirname(pdf_path), f"{base}_pages_img")
+    os.makedirs(output_dir, exist_ok=True)
+
+    out_images = []
+    try:
+        import pdfplumber
+        with pdfplumber.open(pdf_path) as pdf:
+            for i, page in enumerate(pdf.pages, 1):
+                img = page.to_image(resolution=150)
+                img_file = os.path.join(output_dir, f"page_{i}.png")
+                img.save(img_file)
+                out_images.append(img_file)
+        print(f"✅ Berhasil mengkonversi PDF ke {len(out_images)} gambar di: {output_dir}")
+        return out_images
+    except Exception as e:
+        print(f"❌ Gagal konversi PDF ke Gambar: {e}")
+        return []
+
+def images_to_pdf(img_list, output_path=None):
+    """Combine multiple images into a single PDF file"""
+    from PIL import Image
+    valid_imgs = [f for f in img_list if os.path.exists(f)]
+    if not valid_imgs:
+        print("❌ Tidak ada file gambar yang valid.")
+        return None
+
+    if output_path is None:
+        first_dir = os.path.dirname(os.path.abspath(valid_imgs[0]))
+        output_path = os.path.join(first_dir, f"album_{int(time.time())}.pdf")
+
+    pil_images = []
+    for f in valid_imgs:
+        try:
+            im = Image.open(f).convert("RGB")
+            pil_images.append(im)
+        except Exception:
+            pass
+
+    if pil_images:
+        pil_images[0].save(output_path, save_all=True, append_images=pil_images[1:])
+        print(f"✅ Berhasil menggabungkan {len(pil_images)} gambar ke PDF: {output_path}")
+        return output_path
+    return None
+
+
 # ---------------------------------------------------------
 # Document Generation (DOCX, XLSX, PDF, PPTX)
 # ---------------------------------------------------------
@@ -785,6 +912,30 @@ Gunakan flag --send-telegram atau -t untuk pengiriman otomatis.
         txt = args[2] if len(args) > 2 else "CONFIDENTIAL"
         out = args[3] if len(args) > 3 else None
         result_file = add_watermark_to_pdf(pdf_path, text=txt, output_path=out)
+    elif action == "protect_pdf" and len(args) > 1:
+        pdf_path = args[1]
+        pwd = args[2] if len(args) > 2 else "123"
+        out = args[3] if len(args) > 3 else None
+        result_file = protect_pdf(pdf_path, password=pwd, output_path=out)
+    elif action == "unprotect_pdf" and len(args) > 1:
+        pdf_path = args[1]
+        pwd = args[2] if len(args) > 2 else "123"
+        out = args[3] if len(args) > 3 else None
+        result_file = unprotect_pdf(pdf_path, password=pwd, output_path=out)
+    elif action == "compress_pdf" and len(args) > 1:
+        pdf_path = args[1]
+        out = args[2] if len(args) > 2 else None
+        result_file = compress_pdf(pdf_path, output_path=out)
+    elif action == "pdf2img" and len(args) > 1:
+        pdf_path = args[1]
+        out_dir = args[2] if len(args) > 2 else None
+        imgs = pdf_to_images(pdf_path, output_dir=out_dir)
+        if imgs:
+            result_file = imgs[0]
+    elif action == "img2pdf" and len(args) > 1:
+        img_inputs = args[1:]
+        result_file = images_to_pdf(img_inputs)
+
     elif action == "create_docx":
         out = args[1] if len(args) > 1 and args[1] != "-" else None
         title = args[2] if len(args) > 2 else "Dokumen Resmi"
