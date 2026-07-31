@@ -18,3 +18,5 @@ signature_temp.png
 test_doc.pdf
 test_signature*.png
 test_signed_doc.pdf
+.wget-hsts
+*.bak
