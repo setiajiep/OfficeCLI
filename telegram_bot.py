@@ -674,6 +674,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     return text, reply_markup
 
 def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
+    start_time = time.time()
     try:
         before_files = {}
         if os.path.exists(work_dir):
@@ -704,54 +705,83 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         output = output.strip() if output else "✅ Perintah selesai dijalankan."
 
         clean_out = clean_ai_output(output)
-
         rel_dir = work_dir.replace("/root", "~")
         result_header = f"🤖 OFFICE & PHOTO AI EXECUTION\n📍 Path: {rel_dir}\n💬 Prompt: {prompt}\n━━━━━━━━━━━━━━━━━━━━━\n\n"
         full_output = result_header + clean_out
         
         edit_message(chat_id, status_msg_id, full_output)
 
-        after_files = {}
+        sent_files = set()
+
+        # 1. Automatic file delivery for newly created/modified files in work_dir
         if os.path.exists(work_dir):
             try:
                 for fname in os.listdir(work_dir):
-                    fpath = os.path.join(work_dir, fname)
-                    if os.path.isfile(fpath):
-                        after_files[fname] = os.path.getmtime(fpath)
+                    if fname in SYSTEM_FILES or fname.startswith("."):
+                        continue
+                    full_fpath = os.path.join(work_dir, fname)
+                    if os.path.isfile(full_fpath):
+                        mtime = os.path.getmtime(full_fpath)
+                        if fname not in before_files or mtime > (before_files[fname] + 0.01):
+                            if full_fpath not in sent_files:
+                                sent_files.add(full_fpath)
+                                send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen/Foto: {fname}")
             except Exception:
                 pass
 
-        sent_files = set()
-        
-        # 1. Automatic file delivery for newly created/modified files
-        for fname, mtime in after_files.items():
-            if fname in SYSTEM_FILES or fname.startswith("."):
-                continue
-            if fname not in before_files or mtime > (before_files[fname] + 0.01):
-                full_fpath = os.path.join(work_dir, fname)
-                if full_fpath not in sent_files:
-                    sent_files.add(full_fpath)
-                    send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen/Foto: {fname}")
+        # 2. Extract and send files mentioned directly in AGY output text or referenced .md files
+        raw_paths = re.findall(r'(?:file://)?(/root/[^\s\)\"\'>]+|[a-zA-Z0-9_\-\./]+\.(?:pdf|docx|xlsx|pptx|png|jpg|jpeg|webp|md))', output)
+        for p in raw_paths:
+            clean_p = p.replace("file://", "").rstrip(".,;:)")
+            target_f = clean_p if clean_p.startswith("/") else os.path.join(work_dir, clean_p)
 
-        # 2. Extract and send files mentioned directly in AGY output text
-        matches = re.findall(r'(?:/root/[^\s\)\"\'>]+|[a-zA-Z0-9_\-\.]+\.(?:pdf|docx|xlsx|pptx|png|jpg|jpeg|webp|txt))', output)
-        for m in matches:
-            clean_m = m.rstrip(".,;:)")
-            target_f = clean_m if clean_m.startswith("/") else os.path.join(work_dir, clean_m)
             if os.path.exists(target_f) and os.path.isfile(target_f):
-                if target_f not in sent_files and os.path.basename(target_f) not in SYSTEM_FILES:
-                    sent_files.add(target_f)
-                    send_document(chat_id, target_f, caption=f"📄 Dokumen/Foto Terkait: {os.path.basename(target_f)}")
+                if target_f.endswith(".md"):
+                    # Parse markdown file for embedded image links or media references
+                    try:
+                        with open(target_f, "r", encoding="utf-8", errors="ignore") as f:
+                            md_content = f.read()
+                            md_matches = re.findall(r'(?:file://)?(/root/[^\s\)\"\'>]+\.(?:png|jpg|jpeg|webp|pdf|docx|xlsx|pptx))', md_content)
+                            for m_p in md_matches:
+                                m_clean = m_p.replace("file://", "").rstrip(".,;:)")
+                                if os.path.exists(m_clean) and os.path.isfile(m_clean) and m_clean not in sent_files:
+                                    sent_files.add(m_clean)
+                                    ext = os.path.splitext(m_clean)[1].lower()
+                                    if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                                        send_photo(chat_id, m_clean, caption=f"📸 Hasil Foto Studio: {os.path.basename(m_clean)}")
+                                    else:
+                                        send_document(chat_id, m_clean, caption=f"📄 Dokumen Hasil: {os.path.basename(m_clean)}")
+                    except Exception:
+                        pass
+                else:
+                    if target_f not in sent_files and os.path.basename(target_f) not in SYSTEM_FILES:
+                        sent_files.add(target_f)
+                        ext = os.path.splitext(target_f)[1].lower()
+                        if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                            send_photo(chat_id, target_f, caption=f"📸 Hasil Foto: {os.path.basename(target_f)}")
+                        else:
+                            send_document(chat_id, target_f, caption=f"📄 Dokumen/Foto Terkait: {os.path.basename(target_f)}")
 
-        # 3. If user explicitly asked "kirim file" or "kirim filenya", send all recent files in work_dir!
-        if any(kw in prompt.lower() for kw in ["kirim file", "kirimkan file", "kirim filenya", "send file"]):
-            for fname in os.listdir(work_dir):
-                if fname in SYSTEM_FILES or fname.startswith("."):
-                    continue
-                full_fpath = os.path.join(work_dir, fname)
-                if os.path.isfile(full_fpath) and full_fpath not in sent_files:
-                    sent_files.add(full_fpath)
-                    send_document(chat_id, full_fpath, caption=f"📄 Dokumen/Foto: {fname}")
+        # 3. Search brain artifact directory for newly created photos & documents
+        brain_dir = "/root/.gemini/antigravity-cli/brain"
+        if os.path.exists(brain_dir):
+            try:
+                for root_path, dirs, files in os.walk(brain_dir):
+                    for fname in files:
+                        ext = os.path.splitext(fname)[1].lower()
+                        if ext in ['.png', '.jpg', '.jpeg', '.webp', '.pdf', '.docx', '.xlsx', '.pptx']:
+                            full_p = os.path.join(root_path, fname)
+                            try:
+                                if os.path.getmtime(full_p) >= (start_time - 10) and full_p not in sent_files:
+                                    sent_files.add(full_p)
+                                    if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                                        send_photo(chat_id, full_p, caption=f"📸 Hasil Foto Studio AI: {fname}")
+                                    else:
+                                        send_document(chat_id, full_p, caption=f"📄 Hasil Dokumen AI: {fname}")
+                            except Exception:
+                                pass
+            except Exception:
+                pass
 
     except subprocess.TimeoutExpired:
         process.kill()
