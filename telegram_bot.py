@@ -24,6 +24,64 @@ MEDIA_DOWNLOADER = "/root/media_downloader.py"
 
 STATE_FILE = "/root/.antigravity_bot_state.json"
 FILES_PER_PAGE = 8
+HTTP_PORT = 8080
+DOWNLOADS_DIR = "/root/MyProject/downloads"
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+
+def get_public_ip():
+    try:
+        req = urllib.request.Request("https://ifconfig.me", headers={'User-Agent': 'curl/7.68.0'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read().decode('utf-8').strip()
+    except Exception:
+        try:
+            req = urllib.request.Request("https://api.ipify.org", headers={'User-Agent': 'curl/7.68.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return resp.read().decode('utf-8').strip()
+        except Exception:
+            return "188.166.228.142"
+
+VPS_IP = get_public_ip()
+
+def start_http_server():
+    from http.server import HTTPServer, SimpleHTTPRequestHandler
+    class QuietHTTPHandler(SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=DOWNLOADS_DIR, **kwargs)
+        def log_message(self, format, *args):
+            pass
+
+    try:
+        server = HTTPServer(('0.0.0.0', HTTP_PORT), QuietHTTPHandler)
+        print(f"🌐 HTTP File Server active on http://{VPS_IP}:{HTTP_PORT}")
+        server.serve_forever()
+    except Exception as e:
+        print(f"HTTP Server error: {e}", file=sys.stderr)
+
+def cleanup_old_downloads():
+    while True:
+        try:
+            now = time.time()
+            if os.path.exists(DOWNLOADS_DIR):
+                for f in os.listdir(DOWNLOADS_DIR):
+                    fpath = os.path.join(DOWNLOADS_DIR, f)
+                    if os.path.isfile(fpath):
+                        if (now - os.path.getmtime(fpath)) > 86400:
+                            os.remove(fpath)
+        except Exception:
+            pass
+        time.sleep(3600)
+
+def create_download_link(file_path):
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+    filename = os.path.basename(file_path)
+    dest_path = os.path.join(DOWNLOADS_DIR, filename)
+    if file_path != dest_path and os.path.exists(file_path):
+        shutil.copy2(file_path, dest_path)
+    
+    encoded_name = urllib.parse.quote(filename)
+    link = f"http://{VPS_IP}:{HTTP_PORT}/{encoded_name}"
+    return link, dest_path
 
 # Path encoder to ensure Telegram 64-byte callback_data limit is never exceeded
 PATH_MAP = {}
@@ -342,18 +400,21 @@ def process_media_download(url, chat_id, media_type="video", quality="best"):
                     except Exception as ex:
                         print(f"Compression error: {ex}")
                     
-                    # If still > 49MB, move file to MyProject downloads folder so user can access it directly on VPS or File Manager!
-                    dl_dir = "/root/MyProject/downloads"
-                    os.makedirs(dl_dir, exist_ok=True)
-                    dest_file = os.path.join(dl_dir, os.path.basename(file_path))
-                    shutil.move(file_path, dest_file)
+                    link, dest_file = create_download_link(file_path)
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
+                    
                     send_message(
                         chat_id,
-                        f"📦 *FILE SANGAT BESAR ({sz_mb:.1f} MB)*\n"
+                        f"📦 *FILE VIDEO BESAR ({sz_mb:.1f} MB)*\n"
                         f"━━━━━━━━━━━━━━━━━━━━━\n"
-                        f"Karena ukurannya melebihi 50MB batas Telegram API, file telah disimpan secara aman di VPS Anda pada:\n"
-                        f"📍 Path: `{dest_file}`\n\n"
-                        f"💡 Anda dapat membukanya via File Manager (`/fm`), mengompres ke ZIP, atau mentransfernya via CLI.",
+                        f"Karena ukurannya melebihi batas 50MB Telegram, file disimpan di VPS dan dibuatkan **Link Download Langsung**:\n\n"
+                        f"🔗 *LINK DOWNLOAD LANGSUNG:*\n{link}\n\n"
+                        f"📍 *Path VPS:* `{dest_file}`\n"
+                        f"⏱️ *Masa Aktif:* 24 Jam\n\n"
+                        f"💡 Tap link di atas untuk mengunduh langsung ke HP / Browser Anda dengan kecepatan penuh VPS!",
                         parse_mode="Markdown"
                     )
                     return
@@ -966,7 +1027,10 @@ def process_callback_query(cq):
                 ])
                 btn_list.append([{"text": "📦 Compress ke ZIP", "callback_data": f"fm_action:zip_item:{fl_key}"}])
 
-            btn_list.append([{"text": "📥 Download File", "callback_data": f"fm_dl:{fl_key}"}])
+            btn_list.append([
+                {"text": "📥 Download Telegram", "callback_data": f"fm_dl:{fl_key}"},
+                {"text": "🔗 Link Download HTTP", "callback_data": f"fm_link:{fl_key}"}
+            ])
             btn_list.append([{"text": "🗑️ Hapus File Ini", "callback_data": f"fm_rm_confirm:{fl_key}"}])
             btn_list.append([{"text": "🔙 Kembali ke Manager", "callback_data": f"fm_cd:{parent_key}:1"}])
 
@@ -1132,6 +1196,22 @@ def process_callback_query(cq):
         file_path = decode_path(fl_key)
         answer_callback_query(cq_id, "📥 Mengirim file...")
         send_document(chat_id, file_path, caption=f"📄 {os.path.basename(file_path)}")
+
+    elif data.startswith("fm_link:"):
+        fl_key = data.split("fm_link:", 1)[1]
+        file_path = decode_path(fl_key)
+        answer_callback_query(cq_id, "🔗 Membuat Link Download...")
+        link, dest_file = create_download_link(file_path)
+        msg = (
+            f"🔗 *LINK DOWNLOAD HTTP LANGSUNG*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📌 *File:* `{os.path.basename(file_path)}`\n"
+            f"🔗 *Link Download:* \n{link}\n\n"
+            f"📍 *Path VPS:* `{dest_file}`\n"
+            f"⏱️ *Masa Aktif Link:* 24 Jam\n\n"
+            f"💡 Tap link di atas untuk mengunduh langsung dari HP / Browser Anda!"
+        )
+        send_message(chat_id, msg, parse_mode="Markdown")
 
     elif data.startswith("fm_rm_confirm:"):
         item_key = data.split("fm_rm_confirm:", 1)[1]
@@ -1907,6 +1987,12 @@ def main():
     print("Bot Username: @Kontrolagybot")
 
     setup_bot_commands()
+
+    t_http = threading.Thread(target=start_http_server, daemon=True)
+    t_http.start()
+
+    t_clean = threading.Thread(target=cleanup_old_downloads, daemon=True)
+    t_clean.start()
 
     offset = 0
     while True:
