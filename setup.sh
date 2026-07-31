@@ -34,9 +34,9 @@ if ! command -v wrangler &> /dev/null; then
     npm install -g wrangler &> /dev/null || true
 fi
 
-# 4. Install Python Office Libraries
-echo "🐍 Installing Python Office & PDF Libraries..."
-pip install python-docx openpyxl pandas python-pptx reportlab pypdf pdfplumber pdf2image fpdf2 --break-system-packages &> /dev/null || true
+# 4. Install Python Office & Photo Libraries
+echo "🐍 Installing Python Office & PDF & Photo Libraries..."
+pip install python-docx openpyxl pandas python-pptx reportlab pypdf pdfplumber pdf2image fpdf2 qrcode[pil] pytesseract --break-system-packages &> /dev/null || true
 
 # 5. Copy Systemd Bot Service
 if [ -f "/root/antigravity-bot.service" ]; then
@@ -44,7 +44,7 @@ if [ -f "/root/antigravity-bot.service" ]; then
 fi
 
 # 6. Configure Permissions & Executables
-chmod +x /root/telegram_bot.py /root/backup_vps.sh /root/git_backup.sh /root/setup.sh /root/office_tools.py /root/image_tools.py 2>/dev/null || true
+chmod +x /root/telegram_bot.py /root/backup_vps.sh /root/git_backup.sh /root/setup.sh /root/office_tools.py /root/image_tools.py /root/telegram_utils.py 2>/dev/null || true
 chmod +x /root/.local/bin/agy 2>/dev/null || true
 
 # 7. Enable & Restart Systemd Bot Service

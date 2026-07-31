@@ -548,15 +548,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     show_hidden = get_show_hidden(user_id)
     free_gb = get_disk_free_gb(current_dir)
 
-    rel_path = current_dir.replace("/root", "~")
-    text = f"🏢 OFFICE CLI & PHOTO SUITE MANAGER\n"
-    text += f"━━━━━━━━━━━━━━━━━━━━━\n"
-    text += f"📍 Path: {rel_path}\n"
-    text += f"💾 Free Space: {free_gb:.1f} GB\n"
-    if notice:
-        text += f"\n{notice}\n"
-    text += "━━━━━━━━━━━━━━━━━━━━━\n\n"
-
     folders = []
     files = []
     try:
@@ -580,7 +571,10 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         folders.sort(key=lambda x: x.lower())
         files.sort(key=lambda x: x.lower())
     except Exception as e:
-        text += f"❌ Error membaca folder: {e}\n"
+        if notice:
+            notice += f"\n❌ Error membaca folder: {e}"
+        else:
+            notice = f"❌ Error membaca folder: {e}"
 
     total_files = len(files)
     total_pages = max(1, (total_files + FILES_PER_PAGE - 1) // FILES_PER_PAGE)
@@ -590,34 +584,19 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     end_idx = start_idx + FILES_PER_PAGE
     page_files = files[start_idx:end_idx]
 
-    text += f"📁 Folder ({len(folders)}):\n"
-    if folders:
-        for f_name in folders[:15]:
-            text += f"• 📁 {f_name}\n"
-        if len(folders) > 15:
-            text += f"  ...dan {len(folders)-15} folder lainnya.\n"
-    else:
-        text += "_Tidak ada folder_\n"
+    rel_path = current_dir.replace("/root", "~")
+    text = f"🏢 OFFICE CLI & PHOTO SUITE MANAGER\n"
+    text += f"━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"📍 Path: {rel_path}\n"
+    text += f"💾 Free Space: {free_gb:.1f} GB\n"
+    text += f"📊 Total: {len(folders)} Folder | {total_files} File"
+    if total_pages > 1:
+        text += f" (Hal {page}/{total_pages})"
+    text += "\n"
+    if notice:
+        text += f"\n{notice}\n"
+    text += "━━━━━━━━━━━━━━━━━━━━━\n"
 
-    text += f"\n📄 Dokumen & Foto ({total_files}) - Halaman {page}/{total_pages}:\n"
-    if page_files:
-        for fl_name in page_files:
-            ext = os.path.splitext(fl_name)[1].lower()
-            icon = "📄"
-            if ext == ".pdf" or fl_name.lower().startswith("doc-"): icon = "📕"
-            elif ext in [".docx", ".doc"]: icon = "📘"
-            elif ext in [".pptx", ".ppt"]: icon = "📙"
-            elif ext in [".xlsx", ".xls", ".csv"]: icon = "📊"
-            elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]: icon = "🖼️"
-
-            try:
-                sz = os.path.getsize(os.path.join(current_dir, fl_name)) / 1024
-                sz_str = f"{sz:.1f}KB"
-            except Exception:
-                sz_str = ""
-            text += f"• {icon} {fl_name} ({sz_str})\n"
-    else:
-        text += "_Tidak ada file_\n"
 
     inline_keyboard = []
 
@@ -1241,10 +1220,57 @@ def process_callback_query(cq):
             answer_callback_query(cq_id, "Ketik nama folder baru...")
             force_reply = {"force_reply": True, "selective": True}
             send_message(chat_id, f"📁 BUAT FOLDER BARU\n\nKetik nama folder baru yang ingin dibuat di {current_cwd}:", reply_markup=force_reply)
+
+    elif data == "create_doc_menu":
+        answer_callback_query(cq_id, "📝 Menu Pembuat Dokumen")
+        text = "📝 *MENU PEMBUAT DOKUMEN OFFICE*\n━━━━━━━━━━━━━━━━━━━━━\nPilih jenis dokumen yang ingin Anda buat:"
+        btn = {"inline_keyboard": [
+            [{"text": "📘 Word (.docx)", "callback_data": "create_doc_type:docx"}],
+            [{"text": "📊 Excel (.xlsx)", "callback_data": "create_doc_type:xlsx"}],
+            [{"text": "📕 PDF Document", "callback_data": "create_doc_type:pdf"}],
+            [{"text": "📙 PowerPoint (.pptx)", "callback_data": "create_doc_type:pptx"}]
+        ]}
+        edit_message(chat_id, message_id, text, reply_markup=btn, parse_mode="Markdown")
+
+    elif data == "create_img_menu":
+        answer_callback_query(cq_id, "🖼️ Menu Pembuat Gambar")
+        text = "🖼️ *MENU PEMBUAT GAMBAR & QR*\n━━━━━━━━━━━━━━━━━━━━━\nPilih jenis gambar yang ingin Anda buat:"
+        btn = {"inline_keyboard": [
+            [{"text": "🎨 Kartu / Banner Gambar", "callback_data": "create_img_type:banner"}],
+            [{"text": "📱 QR Code Generator", "callback_data": "create_img_type:qr"}]
+        ]}
+        edit_message(chat_id, message_id, text, reply_markup=btn, parse_mode="Markdown")
+
+    elif data.startswith("create_doc_type:"):
+        dtype = data.split("create_doc_type:", 1)[1]
+        answer_callback_query(cq_id, f"Membuat {dtype.upper()}...")
+        force_reply = {"force_reply": True, "selective": True}
+        send_message(chat_id, f"📝 BUAT DOKUMEN {dtype.upper()}\n\nKetik Judul atau Topik dokumen yang ingin dibuat:", reply_markup=force_reply)
+
+    elif data.startswith("create_img_type:"):
+        itype = data.split("create_img_type:", 1)[1]
+        answer_callback_query(cq_id, f"Membuat {itype.upper()}...")
+        force_reply = {"force_reply": True, "selective": True}
+        if itype == "qr":
+            send_message(chat_id, "📱 BUAT GAMBAR QR CODE\n\nKetik URL atau Teks yang ingin dijadikan QR Code:", reply_markup=force_reply)
+        else:
+            send_message(chat_id, "🎨 BUAT KARTU / BANNER GAMBAR\n\nKetik Teks Utama untuk banner gambar:", reply_markup=force_reply)
+
+    elif data.startswith("send_file_tg:"):
+        fl_key = data.split("send_file_tg:", 1)[1]
+        file_path = decode_path(fl_key)
+        if os.path.exists(file_path):
+            answer_callback_query(cq_id, "📤 Mengirim ke Telegram...")
+            send_document(chat_id, file_path, caption=f"📄 File Hasil: {os.path.basename(file_path)}")
+        else:
+            answer_callback_query(cq_id, "❌ File tidak ditemukan", show_alert=True)
+
 def setup_bot_commands():
     commands = [
         {"command": "start", "description": "🚀 Dashboard & Menu Utama"},
         {"command": "menu", "description": "📱 Tombol Menu Keyboard Serba Bisa"},
+        {"command": "createdoc", "description": "📝 Buat Dokumen (DOCX, Excel, PDF, PPTX)"},
+        {"command": "createimg", "description": "🖼️ Buat Gambar, Banner & QR Code"},
         {"command": "fm", "description": "📂 File Manager Interaktif"},
         {"command": "status", "description": "📊 Status VPS (RAM, CPU, Disk)"},
         {"command": "chart", "description": "📈 Chart Analytics Visual VPS"},
@@ -1260,7 +1286,8 @@ def setup_bot_commands():
 def get_main_menu_keyboard():
     return {
         "keyboard": [
-            [{"text": "📂 File Manager"}, {"text": "📊 Status VPS"}],
+            [{"text": "📂 File Manager"}, {"text": "📝 Buat Dokumen"}],
+            [{"text": "🖼️ Buat Gambar"}, {"text": "📊 Status VPS"}],
             [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
             [{"text": "🛠️ Services"}, {"text": "📦 Backup VPS"}],
             [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}],
@@ -1328,6 +1355,103 @@ def process_update(update):
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal membuat file: {e}")
             return
+
+        if "BUAT DOKUMEN DOCX" in reply_text and user_input_name:
+            out_file = os.path.join(current_cwd, f"Dokumen_{int(time.time())}.docx")
+            send_message(chat_id, f"📝 Membuat Dokumen Word `{os.path.basename(out_file)}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "create_docx", out_file, user_input_name], capture_output=True, text=True)
+                if os.path.exists(out_file):
+                    fl_key = encode_path(out_file)
+                    btn = {"inline_keyboard": [
+                        [{"text": "📤 Ya, Kirim File ke Telegram Chat", "callback_data": f"send_file_tg:{fl_key}"}],
+                        [{"text": "📂 Simpan di Server VPS", "callback_data": f"fm_file:{fl_key}"}]
+                    ]}
+                    send_message(chat_id, f"✅ Dokumen Word `{os.path.basename(out_file)}` selesai dibuat!\n\n❓ Mau dikirim ke Telegram nggak dokumennya?", reply_markup=btn)
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat dokumen Word: {e}")
+            return
+
+        if "BUAT DOKUMEN XLSX" in reply_text and user_input_name:
+            out_file = os.path.join(current_cwd, f"Spreadsheet_{int(time.time())}.xlsx")
+            send_message(chat_id, f"📊 Membuat Spreadsheet Excel `{os.path.basename(out_file)}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "create_excel", out_file, user_input_name], capture_output=True, text=True)
+                if os.path.exists(out_file):
+                    fl_key = encode_path(out_file)
+                    btn = {"inline_keyboard": [
+                        [{"text": "📤 Ya, Kirim File ke Telegram Chat", "callback_data": f"send_file_tg:{fl_key}"}],
+                        [{"text": "📂 Simpan di Server VPS", "callback_data": f"fm_file:{fl_key}"}]
+                    ]}
+                    send_message(chat_id, f"✅ Spreadsheet Excel `{os.path.basename(out_file)}` selesai dibuat!\n\n❓ Mau dikirim ke Telegram nggak dokumennya?", reply_markup=btn)
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat Excel: {e}")
+            return
+
+        if "BUAT DOKUMEN PDF" in reply_text and user_input_name:
+            out_file = os.path.join(current_cwd, f"Laporan_{int(time.time())}.pdf")
+            send_message(chat_id, f"📕 Membuat Dokumen PDF `{os.path.basename(out_file)}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "create_pdf", out_file, user_input_name], capture_output=True, text=True)
+                if os.path.exists(out_file):
+                    fl_key = encode_path(out_file)
+                    btn = {"inline_keyboard": [
+                        [{"text": "📤 Ya, Kirim File ke Telegram Chat", "callback_data": f"send_file_tg:{fl_key}"}],
+                        [{"text": "📂 Simpan di Server VPS", "callback_data": f"fm_file:{fl_key}"}]
+                    ]}
+                    send_message(chat_id, f"✅ Dokumen PDF `{os.path.basename(out_file)}` selesai dibuat!\n\n❓ Mau dikirim ke Telegram nggak dokumennya?", reply_markup=btn)
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat PDF: {e}")
+            return
+
+        if "BUAT PRESENTASI PPTX" in reply_text and user_input_name:
+            out_file = os.path.join(current_cwd, f"Presentasi_{int(time.time())}.pptx")
+            send_message(chat_id, f"📙 Membuat Presentasi PowerPoint `{os.path.basename(out_file)}`...")
+            try:
+                res = subprocess.run(["python3", OFFICE_TOOLS, "create_pptx", out_file, user_input_name], capture_output=True, text=True)
+                if os.path.exists(out_file):
+                    fl_key = encode_path(out_file)
+                    btn = {"inline_keyboard": [
+                        [{"text": "📤 Ya, Kirim File ke Telegram Chat", "callback_data": f"send_file_tg:{fl_key}"}],
+                        [{"text": "📂 Simpan di Server VPS", "callback_data": f"fm_file:{fl_key}"}]
+                    ]}
+                    send_message(chat_id, f"✅ Presentasi PPTX `{os.path.basename(out_file)}` selesai dibuat!\n\n❓ Mau dikirim ke Telegram nggak dokumennya?", reply_markup=btn)
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat PPTX: {e}")
+            return
+
+        if "BUAT KARTU / BANNER GAMBAR" in reply_text and user_input_name:
+            out_file = os.path.join(current_cwd, f"Gambar_{int(time.time())}.png")
+            send_message(chat_id, f"🎨 Membuat Gambar Banner `{os.path.basename(out_file)}`...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "create_image", out_file, "1080", "1080", "#1E3C72", user_input_name], capture_output=True, text=True)
+                if os.path.exists(out_file):
+                    fl_key = encode_path(out_file)
+                    btn = {"inline_keyboard": [
+                        [{"text": "📤 Ya, Kirim Gambar ke Telegram Chat", "callback_data": f"send_file_tg:{fl_key}"}],
+                        [{"text": "📂 Simpan di Server VPS", "callback_data": f"fm_file:{fl_key}"}]
+                    ]}
+                    send_message(chat_id, f"✅ Gambar Banner `{os.path.basename(out_file)}` selesai dibuat!\n\n❓ Mau dikirim ke Telegram nggak gambarnya?", reply_markup=btn)
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat gambar: {e}")
+            return
+
+        if "BUAT GAMBAR QR CODE" in reply_text and user_input_name:
+            out_file = os.path.join(current_cwd, f"QRCode_{int(time.time())}.png")
+            send_message(chat_id, f"📱 Membuat Gambar QR Code `{os.path.basename(out_file)}`...")
+            try:
+                res = subprocess.run(["python3", IMAGE_TOOLS, "create_qr", user_input_name, out_file], capture_output=True, text=True)
+                if os.path.exists(out_file):
+                    fl_key = encode_path(out_file)
+                    btn = {"inline_keyboard": [
+                        [{"text": "📤 Ya, Kirim QR Code ke Telegram Chat", "callback_data": f"send_file_tg:{fl_key}"}],
+                        [{"text": "📂 Simpan di Server VPS", "callback_data": f"fm_file:{fl_key}"}]
+                    ]}
+                    send_message(chat_id, f"✅ Gambar QR Code `{os.path.basename(out_file)}` selesai dibuat!\n\n❓ Mau dikirim ke Telegram nggak gambarnya?", reply_markup=btn)
+            except Exception as e:
+                send_message(chat_id, f"❌ Gagal membuat QR Code: {e}")
+            return
+
 
         if "TAMBAHKAN WATERMARK TEKS" in reply_text and user_input_name:
             match = re.search(r'pada `(.*?)`:', reply_text)
@@ -1578,10 +1702,31 @@ def process_update(update):
         )
         return
 
-    if text in ["/fm", "/ls", "/browse", "📂 File Manager"]:
+    if text.lower() in ["fm", "/fm", "ls", "/ls", "browse", "/browse"] or text == "📂 File Manager":
         msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
         send_message(chat_id, msg_text, reply_markup=reply_markup)
         return
+
+    if text.lower() in ["createdoc", "/createdoc", "buatdokumen"] or text == "📝 Buat Dokumen":
+        text_menu = "📝 *PEMBUAT DOKUMEN DENGAN OFFICE CLI*\n━━━━━━━━━━━━━━━━━━━━━\nPilih jenis dokumen yang ingin dibuat:"
+        btn = {"inline_keyboard": [
+            [{"text": "📘 Word (.docx)", "callback_data": "create_doc_type:docx"}],
+            [{"text": "📊 Excel (.xlsx)", "callback_data": "create_doc_type:xlsx"}],
+            [{"text": "📕 PDF Document", "callback_data": "create_doc_type:pdf"}],
+            [{"text": "📙 PowerPoint (.pptx)", "callback_data": "create_doc_type:pptx"}]
+        ]}
+        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
+        return
+
+    if text.lower() in ["createimg", "/createimg", "buatgambar"] or text == "🖼️ Buat Gambar":
+        text_menu = "🖼️ *PEMBUAT GAMBAR & QR CODE*\n━━━━━━━━━━━━━━━━━━━━━\nPilih jenis gambar yang ingin dibuat:"
+        btn = {"inline_keyboard": [
+            [{"text": "🎨 Kartu / Banner Gambar", "callback_data": "create_img_type:banner"}],
+            [{"text": "📱 QR Code Generator", "callback_data": "create_img_type:qr"}]
+        ]}
+        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
+        return
+
 
     if text in ["/status", "/sys", "/vps", "📊 Status VPS"]:
         st = get_system_status()
