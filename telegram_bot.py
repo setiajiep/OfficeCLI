@@ -1319,6 +1319,8 @@ def setup_bot_commands():
         {"command": "menu", "description": "📱 Tombol Menu Keyboard Serba Bisa"},
         {"command": "createdoc", "description": "📝 Buat Dokumen (DOCX, Excel, PDF, PPTX)"},
         {"command": "createimg", "description": "🖼️ Buat Gambar, Banner & QR Code"},
+        {"command": "pasfoto", "description": "📸 Generator Pas Foto Formal (Red/Blue BG)"},
+        {"command": "pdfsuite", "description": "🔒 PDF Power Suite (Protect/Compress/Convert)"},
         {"command": "fm", "description": "📂 File Manager Interaktif"},
         {"command": "status", "description": "📊 Status VPS (RAM, CPU, Disk)"},
         {"command": "chart", "description": "📈 Chart Analytics Visual VPS"},
@@ -1335,7 +1337,8 @@ def get_main_menu_keyboard():
     return {
         "keyboard": [
             [{"text": "📂 File Manager"}, {"text": "📝 Buat Dokumen"}],
-            [{"text": "🖼️ Buat Gambar"}, {"text": "📊 Status VPS"}],
+            [{"text": "🖼️ Buat Gambar"}, {"text": "📸 Pas Foto Formal"}],
+            [{"text": "🔒 PDF Power Suite"}, {"text": "📊 Status VPS"}],
             [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
             [{"text": "🛠️ Services"}, {"text": "📦 Backup VPS"}],
             [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}],
@@ -1344,6 +1347,7 @@ def get_main_menu_keyboard():
         "resize_keyboard": True,
         "is_persistent": True
     }
+
 
 def process_update(update):
     if "callback_query" in update:
@@ -1732,13 +1736,30 @@ def process_update(update):
     text = message["text"].strip()
 
     if text in ["/start", "/menu", "📱 Tombol Menu"]:
+        st = get_system_status()
+        disk_free = st.get('disk_free_gb', 0)
+        ram_used = st.get('mem_used_mb', 0)
+        ram_pct = st.get('mem_percent', 0)
+        
         menu_text = (
-            "📱 *TELGRAM BOT SERBA BISA CONTROLLER*\n"
+            "🚀 *OFFICE CLI & PHOTO AI DASHBOARD*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
-            "Selamat datang! Gunakan **Tombol Menu** di bawah untuk mengakses semua fitur VPS & AI secara langsung dengan sekali tap.\n\n"
-            "💡 *Tip:* Anda juga bisa mengirim pesan suara (*Voice Note*) untuk perintah AI otomatis!"
+            "🟢 *System Status:* `Online & Operational`\n"
+            f"🧠 *RAM Used:* `{ram_used:.1f} MB ({ram_pct:.1f}%)` | 💾 *Free Disk:* `{disk_free:.1f} GB`\n"
+            "🤖 *AI Engine:* `Antigravity 2.0 (Active)`\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "📱 *PILIH MENU CEPAT:* Tap tombol keyboard di bawah untuk akses instant ke fitur dokumen, foto, pas foto, & VPS.\n\n"
+            "💡 *Tips Pintar:*\n"
+            "• Kirim *Voice Note* untuk instruksi AI otomatis!\n"
+            "• Upload foto/dokumen + instruksi di Caption untuk edit langsung!"
         )
+        inline_dash = {"inline_keyboard": [
+            [{"text": "📂 Buka File Manager", "callback_data": "fm_cd:L3Jvb3Q=:1"}],
+            [{"text": "📝 Buat Dokumen", "callback_data": "create_doc_menu"}, {"text": "🖼️ Buat Gambar", "callback_data": "create_img_menu"}],
+            [{"text": "📸 Pas Foto Formal", "callback_data": "pasfoto_menu"}, {"text": "🔒 PDF Power Suite", "callback_data": "pdf_suite_menu"}]
+        ]}
         send_message(chat_id, menu_text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
+        send_message(chat_id, "⚡ *MENU PINTASAN AKSI INLINE:*", reply_markup=inline_dash, parse_mode="Markdown")
         return
 
     if text in ["/closemenu", "/hidemenu", "/close", "🙈 Sembunyikan Menu"]:
@@ -1774,6 +1795,26 @@ def process_update(update):
         ]}
         send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
         return
+
+    if text.lower() in ["pasfoto", "/pasfoto"] or text == "📸 Pas Foto Formal":
+        text_menu = "📸 *GENERATOR PAS FOTO FORMAL INDONESIA*\n━━━━━━━━━━━━━━━━━━━━━\nPilih instruksi pas foto atau buka File Manager untuk pilih foto:"
+        btn = {"inline_keyboard": [
+            [{"text": "🔴 Pas Foto Merah 3x4", "callback_data": "pasfoto_guide:red_3x4"}, {"text": "🔵 Pas Foto Biru 3x4", "callback_data": "pasfoto_guide:blue_3x4"}],
+            [{"text": "🔴 Pas Foto Merah 4x6", "callback_data": "pasfoto_guide:red_4x6"}, {"text": "🔵 Pas Foto Biru 4x6", "callback_data": "pasfoto_guide:blue_4x6"}],
+            [{"text": "📂 Buka File Manager Pilih Foto", "callback_data": "fm_cd:L3Jvb3Q=:1"}]
+        ]}
+        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
+        return
+
+    if text.lower() in ["pdfsuite", "/pdfsuite"] or text == "🔒 PDF Power Suite":
+        text_menu = "🔒 *PDF POWER SUITE & SECURITY*\n━━━━━━━━━━━━━━━━━━━━━\nPilih fungsi PDF yang ingin digunakan:"
+        btn = {"inline_keyboard": [
+            [{"text": "📕 Convert ke PDF", "callback_data": "create_doc_type:pdf"}],
+            [{"text": "📂 Buka File Manager PDF", "callback_data": "fm_cd:L3Jvb3Q=:1"}]
+        ]}
+        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
+        return
+
 
 
     if text in ["/status", "/sys", "/vps", "📊 Status VPS"]:
