@@ -20,7 +20,6 @@ BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
 AGY_BIN = "/root/.local/bin/agy"
 OFFICE_TOOLS = "/root/office_tools.py"
 IMAGE_TOOLS = "/root/image_tools.py"
-MEDIA_DOWNLOADER = "/root/media_downloader.py"
 
 STATE_FILE = "/root/.antigravity_bot_state.json"
 FILES_PER_PAGE = 8
@@ -367,129 +366,6 @@ def send_audio(chat_id, audio_path, caption=None):
     except Exception as e:
         print(f"Native audio upload failed ({e}), fallback to send_document...", file=sys.stderr)
         return send_document(chat_id, audio_path, caption=caption)
-
-def process_media_download(url, chat_id, media_type="video", quality="best"):
-    send_message(chat_id, f"📥 Sedang mengunduh {media_type.upper()} ({quality})...\nMohon tunggu sebentar...")
-    try:
-        if media_type == "video":
-            res = subprocess.run(["python3", MEDIA_DOWNLOADER, "video", url, quality], capture_output=True, text=True)
-            raw_out = res.stdout.strip()
-            paths = [l.strip() for l in raw_out.splitlines() if l.strip().startswith("/")]
-            file_path = paths[-1] if paths else ""
-            
-            if file_path and os.path.exists(file_path):
-                sz_mb = os.path.getsize(file_path) / (1024 * 1024)
-                
-                # If file > 49MB (Telegram Bot API Limit), auto-compress or save to local storage
-                if sz_mb > 49.0:
-                    send_message(chat_id, f"⚡ Ukuran video `{sz_mb:.1f} MB` melebihi batas 50MB Telegram.\nMemulai kompresi otomatis agar video muat...")
-                    comp_path = f"/tmp/compressed_{int(time.time())}.mp4"
-                    try:
-                        cmd = ["ffmpeg", "-y", "-i", file_path, "-vf", "scale='min(1280,iw)':-2", "-crf", "28", "-preset", "faster", comp_path]
-                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-                        if os.path.exists(comp_path):
-                            c_sz = os.path.getsize(comp_path) / (1024 * 1024)
-                            if c_sz <= 49.0:
-                                send_video(chat_id, comp_path, caption=f"📹 Video Downloaded (Compressed) | Original: {sz_mb:.1f}MB ➔ {c_sz:.1f}MB")
-                                try:
-                                    os.remove(comp_path)
-                                    os.remove(file_path)
-                                except Exception:
-                                    pass
-                                return
-                    except Exception as ex:
-                        print(f"Compression error: {ex}")
-                    
-                    link, dest_file = create_download_link(file_path)
-                    try:
-                        os.remove(file_path)
-                    except Exception:
-                        pass
-                    
-                    send_message(
-                        chat_id,
-                        f"📦 *FILE VIDEO BESAR ({sz_mb:.1f} MB)*\n"
-                        f"━━━━━━━━━━━━━━━━━━━━━\n"
-                        f"Karena ukurannya melebihi batas 50MB Telegram, file disimpan di VPS dan dibuatkan **Link Download Langsung**:\n\n"
-                        f"🔗 *LINK DOWNLOAD LANGSUNG:*\n{link}\n\n"
-                        f"📍 *Path VPS:* `{dest_file}`\n"
-                        f"⏱️ *Masa Aktif:* 24 Jam\n\n"
-                        f"💡 Tap link di atas untuk mengunduh langsung ke HP / Browser Anda dengan kecepatan penuh VPS!",
-                        parse_mode="Markdown"
-                    )
-                    return
-
-                send_video(chat_id, file_path, caption=f"📹 Video Downloaded ({quality}) | {sz_mb:.1f}MB")
-                try:
-                    os.remove(file_path)
-                except Exception:
-                    pass
-            else:
-                err_msg = res.stderr.strip() or "File hasil download tidak ditemukan."
-                send_message(chat_id, f"❌ Gagal mengunduh video: {err_msg}")
-        else:
-            res = subprocess.run(["python3", MEDIA_DOWNLOADER, "audio", url, quality], capture_output=True, text=True)
-            raw_out = res.stdout.strip()
-            paths = [l.strip() for l in raw_out.splitlines() if l.strip().startswith("/")]
-            file_path = paths[-1] if paths else ""
-            
-            if file_path and os.path.exists(file_path):
-                sz_mb = os.path.getsize(file_path) / (1024 * 1024)
-                send_audio(chat_id, file_path, caption=f"🎵 Audio Downloaded ({quality}) | {sz_mb:.1f}MB")
-                try:
-                    os.remove(file_path)
-                except Exception:
-                    pass
-            else:
-                err_msg = res.stderr.strip() or "File hasil download tidak ditemukan."
-                send_message(chat_id, f"❌ Gagal mengunduh audio: {err_msg}")
-    except Exception as e:
-        send_message(chat_id, f"❌ Error download: {e}")
-
-def render_media_download_options(url, chat_id):
-    send_message(chat_id, f"🔍 Meneliti metadata link video...")
-    try:
-        res = subprocess.run(["python3", MEDIA_DOWNLOADER, "info", url], capture_output=True, text=True, timeout=35)
-        raw_json = res.stdout.strip()
-        info = json.loads(raw_json) if raw_json else None
-    except Exception:
-        info = None
-
-    title = info.get("title", "Video Media") if info else "Video Media"
-    uploader = info.get("uploader", "Unknown") if info else "Media"
-    dur_sec = info.get("duration", 0) if info else 0
-    dur_str = f"{dur_sec//60}m {dur_sec%60}s" if dur_sec else "N/A"
-    thumb = info.get("thumbnail") if info else None
-
-    url_key = encode_path(url)
-
-    text = f"📹 *YT-DLP FULL MEDIA DOWNLOADER*\n"
-    text += f"━━━━━━━━━━━━━━━━━━━━━\n"
-    text += f"📌 *Judul:* `{clean_ai_output(title)[:60]}`\n"
-    text += f"👤 *Uploader:* `{uploader}` | ⏱️ *Durasi:* `{dur_str}`\n\n"
-    text += f"💡 Pilih format media yang ingin diunduh di bawah ini:"
-
-    btn_list = [
-        [
-            {"text": "🎬 MP4 Best Quality", "callback_data": f"ytdl:video:best:{url_key}"},
-            {"text": "🎬 MP4 720p HD", "callback_data": f"ytdl:video:720p:{url_key}"}
-        ],
-        [
-            {"text": "🎬 MP4 480p SD", "callback_data": f"ytdl:video:480p:{url_key}"},
-            {"text": "🎬 MP4 360p Fast", "callback_data": f"ytdl:video:360p:{url_key}"}
-        ],
-        [
-            {"text": "🎵 Audio MP3 High", "callback_data": f"ytdl:audio:mp3:{url_key}"},
-            {"text": "🎵 Audio M4A High", "callback_data": f"ytdl:audio:m4a:{url_key}"}
-        ]
-    ]
-
-    reply_markup = {"inline_keyboard": btn_list}
-    if thumb:
-        send_photo(chat_id, thumb, caption=text)
-        send_message(chat_id, "👇 *Pilih Format Download:*", reply_markup=reply_markup, parse_mode="Markdown")
-    else:
-        send_message(chat_id, text, reply_markup=reply_markup, parse_mode="Markdown")
 
 def generate_system_chart():
     try:
@@ -1180,17 +1056,6 @@ def process_callback_query(cq):
         except Exception as e:
             send_message(chat_id, f"❌ Error ekstraksi: {e}")
 
-    elif data.startswith("ytdl:"):
-        parts = data.split("ytdl:", 1)[1].split(":")
-        media_type = parts[0]
-        quality = parts[1]
-        url_key = parts[2]
-        target_url = decode_path(url_key)
-        
-        answer_callback_query(cq_id, f"📥 Mengunduh {media_type} ({quality})...")
-        t = threading.Thread(target=process_media_download, args=(target_url, chat_id, media_type, quality))
-        t.start()
-
     elif data.startswith("fm_dl:"):
         fl_key = data.split("fm_dl:", 1)[1]
         file_path = decode_path(fl_key)
@@ -1386,7 +1251,6 @@ def setup_bot_commands():
         {"command": "top", "description": "⚡ Process Manager & Terminate PID"},
         {"command": "services", "description": "🛠️ Service Systemd Monitor"},
         {"command": "web", "description": "🌐 Scraper & Reader Halaman Web"},
-        {"command": "dl", "description": "📹 Downloader Video/Audio YT/TikTok/IG/X"},
         {"command": "backup", "description": "📦 Backup VPS ke GitHub & Telegram"},
         {"command": "closemenu", "description": "🙈 Sembunyikan Tombol Menu Keyboard"},
         {"command": "help", "description": "❓ Panduan & Cara Penggunaan"}
@@ -1399,8 +1263,8 @@ def get_main_menu_keyboard():
             [{"text": "📂 File Manager"}, {"text": "📊 Status VPS"}],
             [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
             [{"text": "🛠️ Services"}, {"text": "📦 Backup VPS"}],
-            [{"text": "📹 Downloader"}, {"text": "🌐 Web Reader"}],
-            [{"text": "❓ Bantuan"}, {"text": "🙈 Sembunyikan Menu"}]
+            [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}],
+            [{"text": "🙈 Sembunyikan Menu"}]
         ],
         "resize_keyboard": True,
         "is_persistent": True
@@ -1763,21 +1627,6 @@ def process_update(update):
             msg += f"• *{s['name']}*: {s['icon']} (`{s['state']}`)\n"
         send_message(chat_id, msg, parse_mode="Markdown")
         return
-
-    if text in ["📹 Downloader", "/downloader"]:
-        send_message(chat_id, "📹 *FULL MEDIA DOWNLOADER*\n\nSilakan kirimkan link video/audio dari YouTube, TikTok, Instagram, Twitter/X, Shorts, dll.\n\nContoh: `/dl https://youtu.be/...` atau kirimkan link langsung di chat!", parse_mode="Markdown")
-        return
-
-    if text.startswith("/dl ") or text.startswith("/yt "):
-        url = text.split(" ", 1)[1].strip()
-        render_media_download_options(url, chat_id)
-        return
-
-    if text.startswith("http://") or text.startswith("https://"):
-        lower_t = text.lower()
-        if any(domain in lower_t for domain in ["youtu.be", "youtube.com", "tiktok.com", "instagram.com", "twitter.com", "x.com", "vimeo.com", "soundcloud.com", "fb.watch", "facebook.com"]):
-            render_media_download_options(text, chat_id)
-            return
 
     if text in ["/backup", "/backupvps", "📦 Backup VPS"]:
         send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
