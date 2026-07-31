@@ -321,9 +321,43 @@ def process_media_download(url, chat_id, media_type="video", quality="best"):
             
             if file_path and os.path.exists(file_path):
                 sz_mb = os.path.getsize(file_path) / (1024 * 1024)
-                if sz_mb > 49.0:
-                    send_message(chat_id, f"⚠️ Ukuran file video ({sz_mb:.1f} MB) melebihi batas 50MB Telegram API.")
                 
+                # If file > 49MB (Telegram Bot API Limit), auto-compress or save to local storage
+                if sz_mb > 49.0:
+                    send_message(chat_id, f"⚡ Ukuran video `{sz_mb:.1f} MB` melebihi batas 50MB Telegram.\nMemulai kompresi otomatis agar video muat...")
+                    comp_path = f"/tmp/compressed_{int(time.time())}.mp4"
+                    try:
+                        cmd = ["ffmpeg", "-y", "-i", file_path, "-vf", "scale='min(1280,iw)':-2", "-crf", "28", "-preset", "faster", comp_path]
+                        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                        if os.path.exists(comp_path):
+                            c_sz = os.path.getsize(comp_path) / (1024 * 1024)
+                            if c_sz <= 49.0:
+                                send_video(chat_id, comp_path, caption=f"📹 Video Downloaded (Compressed) | Original: {sz_mb:.1f}MB ➔ {c_sz:.1f}MB")
+                                try:
+                                    os.remove(comp_path)
+                                    os.remove(file_path)
+                                except Exception:
+                                    pass
+                                return
+                    except Exception as ex:
+                        print(f"Compression error: {ex}")
+                    
+                    # If still > 49MB, move file to MyProject downloads folder so user can access it directly on VPS or File Manager!
+                    dl_dir = "/root/MyProject/downloads"
+                    os.makedirs(dl_dir, exist_ok=True)
+                    dest_file = os.path.join(dl_dir, os.path.basename(file_path))
+                    shutil.move(file_path, dest_file)
+                    send_message(
+                        chat_id,
+                        f"📦 *FILE SANGAT BESAR ({sz_mb:.1f} MB)*\n"
+                        f"━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"Karena ukurannya melebihi 50MB batas Telegram API, file telah disimpan secara aman di VPS Anda pada:\n"
+                        f"📍 Path: `{dest_file}`\n\n"
+                        f"💡 Anda dapat membukanya via File Manager (`/fm`), mengompres ke ZIP, atau mentransfernya via CLI.",
+                        parse_mode="Markdown"
+                    )
+                    return
+
                 send_video(chat_id, file_path, caption=f"📹 Video Downloaded ({quality}) | {sz_mb:.1f}MB")
                 try:
                     os.remove(file_path)
