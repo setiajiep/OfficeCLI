@@ -1615,6 +1615,9 @@ def setup_bot_commands():
     commands = [
         {"command": "start", "description": "🚀 Dashboard & Menu Utama AGY"},
         {"command": "menu", "description": "📱 Tampilkan Tombol Menu Keyboard"},
+        {"command": "sessions", "description": "📜 Pilih & Riwayat Sesi Percakapan"},
+        {"command": "continue", "description": "💬 Aktifkan Mode Sesi Lanjut"},
+        {"command": "new", "description": "🆕 Aktifkan Mode Sesi Baru"},
         {"command": "fm", "description": "📂 File Manager Interaktif"},
         {"command": "exec", "description": "💻 Eksekusi Perintah Bash VPS"},
         {"command": "status", "description": "📊 Status Resources VPS (RAM/CPU/Disk)"},
@@ -1632,6 +1635,7 @@ def get_main_menu_keyboard():
     return {
         "keyboard": [
             [{"text": "🤖 Tanya AGY AI"}, {"text": "📂 File Manager"}],
+            [{"text": "📜 Pilih Sesi"}, {"text": "💬 Sesi Lanjut / Baru"}],
             [{"text": "📊 Status VPS"}, {"text": "📈 Chart VPS"}],
             [{"text": "⚡ Top Processes"}, {"text": "🛠️ Services"}],
             [{"text": "💻 Exec Bash"}, {"text": "📦 Backup VPS"}],
@@ -2071,6 +2075,17 @@ def process_update(update):
     if text.lower() in ["fm", "/fm", "ls", "/ls", "browse", "/browse"] or text == "📂 File Manager":
         msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
         send_message(chat_id, msg_text, reply_markup=reply_markup)
+        return
+
+    if text in ["📜 Pilih Sesi", "📜 List Sesi"]:
+        msg_text, reply_markup = render_session_picker(page=1)
+        send_message(chat_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
+        return
+
+    if text in ["💬 Sesi Lanjut / Baru", "💬 Mode Sesi"]:
+        new_mode = toggle_session_mode(user_id)
+        mode_label = "💬 Mode Sesi Lanjut (Chat Berlanjut)" if new_mode == "continue" else "🆕 Mode Sesi Baru (Chat Baru)"
+        send_message(chat_id, f"⚙️ *MODE SESI DIUBAH*\n━━━━━━━━━━━━━━━━━━━━━\n{mode_label}", parse_mode="Markdown")
         return
 
     if text in ["🤖 Tanya AGY AI", "/ask", "/agy"]:
