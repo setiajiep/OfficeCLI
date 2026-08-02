@@ -1950,11 +1950,13 @@ def process_update(update):
                 urllib.request.urlretrieve(dl_url, target_path)
 
                 if caption_text:
+                    session_mode = get_session_mode(user_id)
                     full_prompt = f"Gambar '{img_filename}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan olah/edit gambar ini sesuai instruksi."
-                    res_msg = send_message(chat_id, f"🤖 Antigravity memproses & mengedit foto {img_filename}...\n💬 Instruksi: {caption_text}")
+                    status_text = format_processing_status(full_prompt, current_cwd, session_mode)
+                    res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
-                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd))
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode))
                         t.start()
                     return
 
@@ -1984,7 +1986,7 @@ def process_update(update):
                     ]
                 ]
                 reply_markup = {"inline_keyboard": btn_list}
-                send_message(chat_id, f"🖼️ FOTO DITERIMA: `{img_filename}`\n📍 Saved to: `{target_path}`\n\n💡 Tip: Pilih aksi editor foto di bawah ini, atau beri instruksi di caption saat upload foto!", reply_markup=reply_markup)
+                send_message(chat_id, f"🖼️ GAMBAR DITERIMA: `{img_filename}`\n📍 Saved to: `{target_path}`\n\n💡 Gambar telah tersimpan di direktori proyek. Silakan pilih tombol aksi di bawah ini, atau ketik instruksi di chat kapan saja!", reply_markup=reply_markup, parse_mode="Markdown")
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal mengunduh gambar: {e}")
         return
@@ -2006,11 +2008,13 @@ def process_update(update):
                 urllib.request.urlretrieve(dl_url, target_path)
 
                 if caption_text:
-                    full_prompt = f"File '{file_name}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan edit atau proses file '{file_name}' sesuai instruksi tersebut."
-                    res_msg = send_message(chat_id, f"🤖 Antigravity mengedit file {file_name} sesuai instruksi...\n💬 Instruksi: {caption_text}")
+                    session_mode = get_session_mode(user_id)
+                    full_prompt = f"File '{file_name}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan edit, analisis, atau proses file '{file_name}' sesuai instruksi tersebut."
+                    status_text = format_processing_status(full_prompt, current_cwd, session_mode)
+                    res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
-                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd))
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode))
                         t.start()
                     return
 
@@ -2051,7 +2055,7 @@ def process_update(update):
                 btn_list.append([{"text": "🔙 Buka di File Manager", "callback_data": f"fm_cd:{parent_key}:1"}])
 
                 reply_markup = {"inline_keyboard": btn_list}
-                send_message(chat_id, f"📥 DOKUMEN DITERIMA: {file_name}\n📍 Saved to: {target_path}\n\n💡 Tip: Kamu bisa upload dokumen/foto sambil memberikan instruksi di Caption!", reply_markup=reply_markup)
+                send_message(chat_id, f"📥 FILE DITERIMA: `{file_name}`\n📍 Saved to: `{target_path}`\n\n💡 File telah tersimpan di direktori proyek. Silakan pilih tombol aksi di bawah ini, atau ketik instruksi di chat kapan saja!", reply_markup=reply_markup, parse_mode="Markdown")
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal mengunduh file: {e}")
         return
