@@ -181,6 +181,20 @@ def toggle_show_hidden(user_id):
     save_state(STATE)
     return not current
 
+def get_session_mode(user_id):
+    str_id = str(user_id)
+    return STATE.get("session_modes", {}).get(str_id, "continue")
+
+def toggle_session_mode(user_id):
+    str_id = str(user_id)
+    if "session_modes" not in STATE:
+        STATE["session_modes"] = {}
+    current = STATE["session_modes"].get(str_id, "continue")
+    new_mode = "new" if current == "continue" else "continue"
+    STATE["session_modes"][str_id] = new_mode
+    save_state(STATE)
+    return new_mode
+
 def api_request(method, data=None):
     url = BASE_URL + method
     try:
@@ -637,8 +651,12 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         {"text": "📈 Chart VPS", "callback_data": "fm_action:view_chart"},
         {"text": "⚡ Processes", "callback_data": "fm_action:view_procs"}
     ])
+    session_mode = get_session_mode(user_id)
+    session_text = "💬 Sesi: Lanjut" if session_mode == "continue" else "🆕 Sesi: Baru"
+
     inline_keyboard.append([
         {"text": "📦 Backup VPS", "callback_data": "fm_action:do_backup"},
+        {"text": session_text, "callback_data": "fm_action:toggle_session_mode"},
         {"text": toggle_hidden_text, "callback_data": "fm_action:toggle_hidden"}
     ])
 
@@ -688,7 +706,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
 
-def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
+def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, use_continue=True):
     start_time = time.time()
     try:
         before_files = {}
@@ -706,11 +724,14 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
 
         cmd = [
             AGY_BIN,
-            "--add-dir", work_dir,
-            "--continue",
+            "--add-dir", work_dir
+        ]
+        if use_continue:
+            cmd.append("--continue")
+        cmd.extend([
             "--prompt", prompt,
             "--dangerously-skip-permissions"
-        ]
+        ])
         
         process = subprocess.Popen(
             cmd,
@@ -1416,6 +1437,12 @@ def process_callback_query(cq):
             new_state = toggle_show_hidden(user_id)
             state_str = "ditampilkan" if new_state else "disembunyikan"
             answer_callback_query(cq_id, f"👁️ File System {state_str}!")
+            msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
+            edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup)
+        elif action == "toggle_session_mode":
+            new_mode = toggle_session_mode(user_id)
+            mode_label = "💬 Sesi Lanjut" if new_mode == "continue" else "🆕 Sesi Baru"
+            answer_callback_query(cq_id, f"⚙️ Mode diubah ke: {mode_label}!")
             msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
             edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup)
         elif action == "do_backup":
@@ -2164,11 +2191,31 @@ def process_update(update):
             send_message(chat_id, f"❌ Exec error: {e}")
         return
 
+    # /new or /newsession or /reset -> Switch to new session mode
+    if text in ["/new", "/newsession", "/resetsession", "/reset"]:
+        if "session_modes" not in STATE:
+            STATE["session_modes"] = {}
+        STATE["session_modes"][str(user_id)] = "new"
+        save_state(STATE)
+        send_message(chat_id, "🆕 *MODE SESI BARU AKTIF!*\n━━━━━━━━━━━━━━━━━━━━━\nSetiap perintah baru tidak akan menyambung riwayat obrolan sebelumnya.\n\n💡 *Tip*: Ketik /continue untuk mengaktifkan kembali mode percakapan berlanjut.", parse_mode="Markdown")
+        return
+
+    # /continue or /continuesession -> Switch to continuous session mode
+    if text in ["/continue", "/continuesession"]:
+        if "session_modes" not in STATE:
+            STATE["session_modes"] = {}
+        STATE["session_modes"][str(user_id)] = "continue"
+        save_state(STATE)
+        send_message(chat_id, "💬 *MODE SESI LANJUT AKTIF!*\n━━━━━━━━━━━━━━━━━━━━━\nPerintah baru akan otomatis menyambung memori dan percakapan sebelumnya.\n\n💡 *Tip*: Ketik /new untuk mulai sesi baru.", parse_mode="Markdown")
+        return
+
     # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
-    res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah...\n📍 cwd: {current_cwd}")
+    use_continue = (get_session_mode(user_id) == "continue")
+    session_label = "💬 (Sesi Lanjut)" if use_continue else "🆕 (Sesi Baru)"
+    res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah {session_label}...\n📍 cwd: {current_cwd}")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
-        t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd))
+        t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, use_continue))
         t.start()
 
 def main():
