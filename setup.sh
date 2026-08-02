@@ -12,6 +12,15 @@ set -e
 
 echo "🚀 Starting Complete VPS Setup & Restore (OfficeCLI & PDF Suite)..."
 
+# 0. Auto-clone repository if files are missing in /root
+if [ ! -f "/root/telegram_bot.py" ]; then
+    echo "📥 Repository files not found in /root. Cloning from GitHub..."
+    apt-get update -qq && apt-get install -y -qq git
+    git clone https://github.com/setiajiep/OfficeCLI.git /tmp/officecli_repo
+    cp -rn /tmp/officecli_repo/* /tmp/officecli_repo/.* /root/ 2>/dev/null || true
+    rm -rf /tmp/officecli_repo
+fi
+
 # 1. Setup Timezone to Asia/Jakarta (WIB)
 echo "🌐 Setting timezone to Asia/Jakarta (WIB)..."
 timedatectl set-timezone Asia/Jakarta 2>/dev/null || ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
