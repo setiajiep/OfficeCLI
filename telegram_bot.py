@@ -707,6 +707,7 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         cmd = [
             AGY_BIN,
             "--add-dir", work_dir,
+            "--continue",
             "--prompt", prompt,
             "--dangerously-skip-permissions"
         ]
