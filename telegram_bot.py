@@ -217,22 +217,30 @@ def get_recent_sessions(limit=50):
         entries.sort(key=lambda x: x[1], reverse=True)
         
         for cid, mtime, cpath in entries[:limit]:
-            topic = "Sesi Obrolan"
+            topic = "Sesi Obrolan Tanpa Judul"
+            msg_count = 0
             transcript_file = os.path.join(cpath, ".system_generated", "logs", "transcript.jsonl")
             if os.path.exists(transcript_file):
                 try:
                     with open(transcript_file, "r") as f:
                         for line in f:
                             if '"USER_INPUT"' in line:
-                                data = json.loads(line)
-                                content = data.get("content", "")
-                                if content:
-                                    topic = content[:22]
-                                    break
+                                msg_count += 1
+                                if topic == "Sesi Obrolan Tanpa Judul":
+                                    data = json.loads(line)
+                                    content = data.get("content", "")
+                                    if content:
+                                        clean_topic = re.sub(r'[\r\n]+', ' ', content).strip()
+                                        topic = clean_topic[:85]
                 except Exception:
                     pass
             date_str = datetime.fromtimestamp(mtime).strftime("%d/%m %H:%M")
-            sessions.append({"id": cid, "date": date_str, "topic": topic})
+            sessions.append({
+                "id": cid,
+                "date": date_str,
+                "topic": topic,
+                "msg_count": msg_count if msg_count > 0 else 1
+            })
     except Exception as e:
         print(f"Error fetching sessions: {e}")
     return sessions
@@ -257,22 +265,26 @@ def render_session_picker(page=1):
     text += f"📊 Total: {total_sessions} Sesi | Halaman {page}/{total_pages}\n\n"
 
     btns = []
-    for s in page_sessions:
-        text += f"• `{s['date']}` | *{s['topic']}*\n  ID: `{s['id'][:13]}...`\n"
-        btns.append([{"text": f"🔖 Pilih: {s['topic'][:18]} ({s['date']})", "callback_data": f"pick_session:{s['id']}"}])
+    for idx, s in enumerate(page_sessions, start=start_idx + 1):
+        text += f"*{idx}. 🕒 {s['date']}* ({s['msg_count']} pesan)\n"
+        text += f"   💬 `\"{s['topic']}\"`\n"
+        text += f"   🆔 ID: `{s['id'][:13]}...`\n\n"
+        
+        btn_label = f"🔖 {idx}. {s['topic'][:25]}... ({s['date']})"
+        btns.append([{"text": btn_label, "callback_data": f"fm_action:pick_session:{s['id']}"}])
 
     if total_pages > 1:
         pag_row = []
         if page > 1:
-            pag_row.append({"text": "◀️ Prev", "callback_data": f"list_sessions:{page-1}"})
+            pag_row.append({"text": "◀️ Prev", "callback_data": f"fm_action:list_sessions:{page-1}"})
         pag_row.append({"text": f"📄 {page}/{total_pages}", "callback_data": "fm_action:noop"})
         if page < total_pages:
-            pag_row.append({"text": "Next ▶️", "callback_data": f"list_sessions:{page+1}"})
+            pag_row.append({"text": "Next ▶️", "callback_data": f"fm_action:list_sessions:{page+1}"})
         btns.append(pag_row)
 
     btns.append([
-        {"text": "💬 Sesi Lanjut Default", "callback_data": "pick_session:continue"},
-        {"text": "🆕 Sesi Baru", "callback_data": "pick_session:new"}
+        {"text": "💬 Sesi Lanjut Default", "callback_data": "fm_action:pick_session:continue"},
+        {"text": "🆕 Sesi Baru", "callback_data": "fm_action:pick_session:new"}
     ])
 
     reply_markup = {"inline_keyboard": btns}
