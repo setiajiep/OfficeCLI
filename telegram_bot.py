@@ -821,6 +821,32 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
 
+def format_processing_status(prompt, current_cwd, session_mode):
+    rel_dir = current_cwd.replace("/root", "~")
+    if session_mode == "continue":
+        sess_label = "💬 Sesi Lanjut"
+    elif session_mode == "new":
+        sess_label = "🆕 Sesi Baru"
+    else:
+        sess_label = f"🔖 Sesi ({session_mode[:8]}...)"
+    
+    clean_p = prompt.strip().replace("\n", " ")
+    p_short = f"\"{clean_p[:60]}...\"" if len(clean_p) > 60 else f"\"{clean_p}\""
+    start_time_str = datetime.now().strftime("%H:%M:%S WIB")
+
+    status_text = (
+        "🚀 *ANTIGRAVITY AGENTIC AI INITIALIZED*\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        f"⚡ *Status:* `🔄 Processing Task...`\n"
+        f"💬 *Prompt:* `{p_short}`\n"
+        f"🔖 *Mode Sesi:* `{sess_label}`\n"
+        f"📂 *Workspace:* `{rel_dir}`\n"
+        f"⏰ *Started:* `{start_time_str}`\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "⏳ _Antigravity Engine sedang menganalisis & mengeksekusi instruksi..._"
+    )
+    return status_text
+
 def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="continue"):
     start_time = time.time()
     try:
@@ -862,12 +888,26 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
         output, _ = process.communicate(timeout=300)
         output = output.strip() if output else "✅ Perintah selesai dijalankan."
 
+        elapsed_sec = time.time() - start_time
         clean_out = clean_ai_output(output)
         rel_dir = work_dir.replace("/root", "~")
-        result_header = f"🤖 OFFICE & PHOTO AI EXECUTION\n📍 Path: {rel_dir}\n💬 Prompt: {prompt}\n━━━━━━━━━━━━━━━━━━━━━\n\n"
-        full_output = result_header + clean_out
         
-        edit_message(chat_id, status_msg_id, full_output)
+        clean_p = prompt.strip().replace("\n", " ")
+        p_short = f"\"{clean_p[:60]}...\"" if len(clean_p) > 60 else f"\"{clean_p}\""
+
+        result_header = (
+            "⚡ *ANTIGRAVITY AI EXECUTION COMPLETED*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📂 *Workspace:* `{rel_dir}`\n"
+            f"⏱️ *Duration:* `{elapsed_sec:.1f}s`\n"
+            f"💬 *Prompt:* `{p_short}`\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "📌 *HASIL & LAPORAN EKSEKUSI:*\n\n"
+        )
+        result_footer = "\n\n━━━━━━━━━━━━━━━━━━━━━\n✅ *Tugas berhasil diselesaikan oleh Antigravity AI.*"
+        full_output = result_header + clean_out + result_footer
+        
+        edit_message(chat_id, status_msg_id, full_output, parse_mode="Markdown")
 
         sent_files = set()
         new_pdf_files = []
@@ -2373,14 +2413,8 @@ def process_update(update):
 
     # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
     session_mode = get_session_mode(user_id)
-    if session_mode == "continue":
-        session_label = "💬 (Sesi Lanjut)"
-    elif session_mode == "new":
-        session_label = "🆕 (Sesi Baru)"
-    else:
-        session_label = f"🔖 (Sesi {session_mode[:8]})"
-
-    res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah {session_label}...\n📍 cwd: {current_cwd}")
+    status_text = format_processing_status(text, current_cwd, session_mode)
+    res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
         t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, session_mode))
