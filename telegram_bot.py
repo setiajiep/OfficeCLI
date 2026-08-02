@@ -202,6 +202,17 @@ def set_user_session_id(user_id, session_id):
     STATE["session_modes"][str_id] = session_id
     save_state(STATE)
 
+def clean_transcript_text(text):
+    if not text:
+        return ""
+    text = re.sub(r'<ADDITIONAL_METADATA>.*?</ADDITIONAL_METADATA>', '', text, flags=re.DOTALL)
+    text = re.sub(r'<SYSTEM_MESSAGE>.*?</SYSTEM_MESSAGE>', '', text, flags=re.DOTALL)
+    text = re.sub(r'<USER_SETTINGS_CHANGE>.*?</USER_SETTINGS_CHANGE>', '', text, flags=re.DOTALL)
+    text = re.sub(r'</?[a-zA-Z_0-9]+[^>]*>', '', text)
+    text = re.sub(r'[\r\n]+', ' ', text)
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
 def get_recent_sessions(limit=50):
     brain_dir = "/root/.gemini/antigravity-cli/brain"
     sessions = []
@@ -230,8 +241,9 @@ def get_recent_sessions(limit=50):
                                     data = json.loads(line)
                                     content = data.get("content", "")
                                     if content:
-                                        clean_topic = re.sub(r'[\r\n]+', ' ', content).strip()
-                                        topic = clean_topic[:85]
+                                        cleaned = clean_transcript_text(content)
+                                        if cleaned:
+                                            topic = cleaned[:85]
                 except Exception:
                     pass
             date_str = datetime.fromtimestamp(mtime).strftime("%d/%m %H:%M")
