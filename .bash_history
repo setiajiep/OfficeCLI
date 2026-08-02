@@ -4,3 +4,5 @@ agy
 source ~/.bashrc
 agy --version
 agy
+clear
+agy
