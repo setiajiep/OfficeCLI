@@ -195,6 +195,48 @@ def toggle_session_mode(user_id):
     save_state(STATE)
     return new_mode
 
+def set_user_session_id(user_id, session_id):
+    str_id = str(user_id)
+    if "session_modes" not in STATE:
+        STATE["session_modes"] = {}
+    STATE["session_modes"][str_id] = session_id
+    save_state(STATE)
+
+def get_recent_sessions(limit=6):
+    brain_dir = "/root/.gemini/antigravity-cli/brain"
+    sessions = []
+    if not os.path.exists(brain_dir):
+        return []
+    try:
+        entries = []
+        for cid in os.listdir(brain_dir):
+            cpath = os.path.join(brain_dir, cid)
+            if os.path.isdir(cpath) and len(cid) > 25:
+                mtime = os.path.getmtime(cpath)
+                entries.append((cid, mtime, cpath))
+        entries.sort(key=lambda x: x[1], reverse=True)
+        
+        for cid, mtime, cpath in entries[:limit]:
+            topic = "Sesi Obrolan"
+            transcript_file = os.path.join(cpath, ".system_generated", "logs", "transcript.jsonl")
+            if os.path.exists(transcript_file):
+                try:
+                    with open(transcript_file, "r") as f:
+                        for line in f:
+                            if '"USER_INPUT"' in line:
+                                data = json.loads(line)
+                                content = data.get("content", "")
+                                if content:
+                                    topic = content[:22]
+                                    break
+                except Exception:
+                    pass
+            date_str = datetime.fromtimestamp(mtime).strftime("%d/%m %H:%M")
+            sessions.append({"id": cid, "date": date_str, "topic": topic})
+    except Exception as e:
+        print(f"Error fetching sessions: {e}")
+    return sessions
+
 def api_request(method, data=None):
     url = BASE_URL + method
     try:
@@ -652,11 +694,19 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
         {"text": "⚡ Processes", "callback_data": "fm_action:view_procs"}
     ])
     session_mode = get_session_mode(user_id)
-    session_text = "💬 Sesi: Lanjut" if session_mode == "continue" else "🆕 Sesi: Baru"
+    if session_mode == "continue":
+        session_text = "💬 Sesi: Lanjut"
+    elif session_mode == "new":
+        session_text = "🆕 Sesi: Baru"
+    else:
+        session_text = f"🔖 Sesi: {session_mode[:8]}"
 
     inline_keyboard.append([
         {"text": "📦 Backup VPS", "callback_data": "fm_action:do_backup"},
         {"text": session_text, "callback_data": "fm_action:toggle_session_mode"},
+        {"text": "📜 Pilih Sesi", "callback_data": "fm_action:list_sessions"}
+    ])
+    inline_keyboard.append([
         {"text": toggle_hidden_text, "callback_data": "fm_action:toggle_hidden"}
     ])
 
@@ -706,7 +756,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
 
-def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, use_continue=True):
+def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="continue"):
     start_time = time.time()
     try:
         before_files = {}
@@ -726,8 +776,11 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, use_continue=T
             AGY_BIN,
             "--add-dir", work_dir
         ]
-        if use_continue:
+        if session_mode == "continue":
             cmd.append("--continue")
+        elif session_mode and session_mode != "new":
+            cmd.extend(["--conversation", str(session_mode)])
+
         cmd.extend([
             "--prompt", prompt,
             "--dangerously-skip-permissions"
@@ -1432,6 +1485,29 @@ def process_callback_query(cq):
             except Exception as e:
                 send_message(chat_id, f"❌ Error unzip: {e}")
 
+
+        elif action == "list_sessions":
+            answer_callback_query(cq_id, "📜 Memuat Daftar Sesi Percakapan...")
+            sessions = get_recent_sessions(limit=6)
+            if not sessions:
+                send_message(chat_id, "📜 Belum ada riwayat sesi percakapan yang tersimpan.")
+            else:
+                msg = "📜 *DAFTAR SESI PERCAKAPAN RIWAYAT*\n━━━━━━━━━━━━━━━━━━━━━\nPilih sesi di bawah ini untuk mengaktifkan & melanjutkan percakapan tersebut:\n\n"
+                btns = []
+                for s in sessions:
+                    msg += f"• `{s['date']}` | *{s['topic']}*\n  ID: `{s['id'][:13]}...`\n"
+                    btns.append([{"text": f"🔖 Pilih: {s['topic'][:18]} ({s['date']})", "callback_data": f"pick_session:{s['id']}"}])
+                
+                btns.append([{"text": "💬 Sesi Lanjut Default", "callback_data": "pick_session:continue"}, {"text": "🆕 Sesi Baru", "callback_data": "pick_session:new"}])
+                send_message(chat_id, msg, reply_markup={"inline_keyboard": btns}, parse_mode="Markdown")
+
+        elif action.startswith("pick_session:"):
+            cid = action.split("pick_session:", 1)[1]
+            set_user_session_id(user_id, cid)
+            label = "💬 Sesi Lanjut Default" if cid == "continue" else ("🆕 Sesi Baru" if cid == "new" else f"🔖 Sesi ({cid[:8]}...)")
+            answer_callback_query(cq_id, f"✅ Mode Sesi Diaktifkan: {label}")
+            msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1, notice=f"✅ Mode Sesi Diaktifkan: {label}")
+            edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup)
 
         elif action == "toggle_hidden":
             new_state = toggle_show_hidden(user_id)
@@ -2191,6 +2267,22 @@ def process_update(update):
             send_message(chat_id, f"❌ Exec error: {e}")
         return
 
+    # /sessions or /listsessions -> Show interactive list of past sessions
+    if text in ["/sessions", "/listsessions", "/history"]:
+        sessions = get_recent_sessions(limit=6)
+        if not sessions:
+            send_message(chat_id, "📜 Belum ada riwayat sesi percakapan yang tersimpan.")
+        else:
+            msg = "📜 *DAFTAR SESI PERCAKAPAN RIWAYAT*\n━━━━━━━━━━━━━━━━━━━━━\nPilih sesi di bawah ini untuk mengaktifkan & melanjutkan percakapan tersebut:\n\n"
+            btns = []
+            for s in sessions:
+                msg += f"• `{s['date']}` | *{s['topic']}*\n  ID: `{s['id'][:13]}...`\n"
+                btns.append([{"text": f"🔖 Pilih: {s['topic'][:18]} ({s['date']})", "callback_data": f"pick_session:{s['id']}"}])
+            
+            btns.append([{"text": "💬 Sesi Lanjut Default", "callback_data": "pick_session:continue"}, {"text": "🆕 Sesi Baru", "callback_data": "pick_session:new"}])
+            send_message(chat_id, msg, reply_markup={"inline_keyboard": btns}, parse_mode="Markdown")
+        return
+
     # /new or /newsession or /reset -> Switch to new session mode
     if text in ["/new", "/newsession", "/resetsession", "/reset"]:
         if "session_modes" not in STATE:
@@ -2210,12 +2302,18 @@ def process_update(update):
         return
 
     # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
-    use_continue = (get_session_mode(user_id) == "continue")
-    session_label = "💬 (Sesi Lanjut)" if use_continue else "🆕 (Sesi Baru)"
+    session_mode = get_session_mode(user_id)
+    if session_mode == "continue":
+        session_label = "💬 (Sesi Lanjut)"
+    elif session_mode == "new":
+        session_label = "🆕 (Sesi Baru)"
+    else:
+        session_label = f"🔖 (Sesi {session_mode[:8]})"
+
     res_msg = send_message(chat_id, f"🤖 Antigravity memproses perintah {session_label}...\n📍 cwd: {current_cwd}")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
-        t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, use_continue))
+        t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, session_mode))
         t.start()
 
 def main():
