@@ -202,7 +202,7 @@ def set_user_session_id(user_id, session_id):
     STATE["session_modes"][str_id] = session_id
     save_state(STATE)
 
-def get_recent_sessions(limit=6):
+def get_recent_sessions(limit=50):
     brain_dir = "/root/.gemini/antigravity-cli/brain"
     sessions = []
     if not os.path.exists(brain_dir):
@@ -236,6 +236,47 @@ def get_recent_sessions(limit=6):
     except Exception as e:
         print(f"Error fetching sessions: {e}")
     return sessions
+
+SESSIONS_PER_PAGE = 5
+
+def render_session_picker(page=1):
+    all_sessions = get_recent_sessions(limit=50)
+    if not all_sessions:
+        return "📜 Belum ada riwayat sesi percakapan yang tersimpan.", {"inline_keyboard": []}
+
+    total_sessions = len(all_sessions)
+    total_pages = max(1, (total_sessions + SESSIONS_PER_PAGE - 1) // SESSIONS_PER_PAGE)
+    page = max(1, min(page, total_pages))
+
+    start_idx = (page - 1) * SESSIONS_PER_PAGE
+    end_idx = start_idx + SESSIONS_PER_PAGE
+    page_sessions = all_sessions[start_idx:end_idx]
+
+    text = f"📜 *DAFTAR SESI PERCAKAPAN RIWAYAT*\n"
+    text += f"━━━━━━━━━━━━━━━━━━━━━\n"
+    text += f"📊 Total: {total_sessions} Sesi | Halaman {page}/{total_pages}\n\n"
+
+    btns = []
+    for s in page_sessions:
+        text += f"• `{s['date']}` | *{s['topic']}*\n  ID: `{s['id'][:13]}...`\n"
+        btns.append([{"text": f"🔖 Pilih: {s['topic'][:18]} ({s['date']})", "callback_data": f"pick_session:{s['id']}"}])
+
+    if total_pages > 1:
+        pag_row = []
+        if page > 1:
+            pag_row.append({"text": "◀️ Prev", "callback_data": f"list_sessions:{page-1}"})
+        pag_row.append({"text": f"📄 {page}/{total_pages}", "callback_data": "fm_action:noop"})
+        if page < total_pages:
+            pag_row.append({"text": "Next ▶️", "callback_data": f"list_sessions:{page+1}"})
+        btns.append(pag_row)
+
+    btns.append([
+        {"text": "💬 Sesi Lanjut Default", "callback_data": "pick_session:continue"},
+        {"text": "🆕 Sesi Baru", "callback_data": "pick_session:new"}
+    ])
+
+    reply_markup = {"inline_keyboard": btns}
+    return text, reply_markup
 
 def api_request(method, data=None):
     url = BASE_URL + method
@@ -1486,20 +1527,16 @@ def process_callback_query(cq):
                 send_message(chat_id, f"❌ Error unzip: {e}")
 
 
-        elif action == "list_sessions":
-            answer_callback_query(cq_id, "📜 Memuat Daftar Sesi Percakapan...")
-            sessions = get_recent_sessions(limit=6)
-            if not sessions:
-                send_message(chat_id, "📜 Belum ada riwayat sesi percakapan yang tersimpan.")
-            else:
-                msg = "📜 *DAFTAR SESI PERCAKAPAN RIWAYAT*\n━━━━━━━━━━━━━━━━━━━━━\nPilih sesi di bawah ini untuk mengaktifkan & melanjutkan percakapan tersebut:\n\n"
-                btns = []
-                for s in sessions:
-                    msg += f"• `{s['date']}` | *{s['topic']}*\n  ID: `{s['id'][:13]}...`\n"
-                    btns.append([{"text": f"🔖 Pilih: {s['topic'][:18]} ({s['date']})", "callback_data": f"pick_session:{s['id']}"}])
-                
-                btns.append([{"text": "💬 Sesi Lanjut Default", "callback_data": "pick_session:continue"}, {"text": "🆕 Sesi Baru", "callback_data": "pick_session:new"}])
-                send_message(chat_id, msg, reply_markup={"inline_keyboard": btns}, parse_mode="Markdown")
+        elif action == "list_sessions" or action.startswith("list_sessions:"):
+            page = 1
+            if ":" in action:
+                try:
+                    page = int(action.split("list_sessions:", 1)[1])
+                except Exception:
+                    page = 1
+            answer_callback_query(cq_id, f"📜 Memuat Sesi Hal {page}...")
+            msg_text, reply_markup = render_session_picker(page=page)
+            edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
 
         elif action.startswith("pick_session:"):
             cid = action.split("pick_session:", 1)[1]
@@ -2268,19 +2305,13 @@ def process_update(update):
         return
 
     # /sessions or /listsessions -> Show interactive list of past sessions
-    if text in ["/sessions", "/listsessions", "/history"]:
-        sessions = get_recent_sessions(limit=6)
-        if not sessions:
-            send_message(chat_id, "📜 Belum ada riwayat sesi percakapan yang tersimpan.")
-        else:
-            msg = "📜 *DAFTAR SESI PERCAKAPAN RIWAYAT*\n━━━━━━━━━━━━━━━━━━━━━\nPilih sesi di bawah ini untuk mengaktifkan & melanjutkan percakapan tersebut:\n\n"
-            btns = []
-            for s in sessions:
-                msg += f"• `{s['date']}` | *{s['topic']}*\n  ID: `{s['id'][:13]}...`\n"
-                btns.append([{"text": f"🔖 Pilih: {s['topic'][:18]} ({s['date']})", "callback_data": f"pick_session:{s['id']}"}])
-            
-            btns.append([{"text": "💬 Sesi Lanjut Default", "callback_data": "pick_session:continue"}, {"text": "🆕 Sesi Baru", "callback_data": "pick_session:new"}])
-            send_message(chat_id, msg, reply_markup={"inline_keyboard": btns}, parse_mode="Markdown")
+    if text.startswith("/sessions") or text.startswith("/listsessions") or text.startswith("/history"):
+        page = 1
+        parts = text.strip().split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            page = int(parts[1])
+        msg_text, reply_markup = render_session_picker(page=page)
+        send_message(chat_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
         return
 
     # /new or /newsession or /reset -> Switch to new session mode
