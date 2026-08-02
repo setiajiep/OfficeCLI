@@ -822,30 +822,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     return text, reply_markup
 
 def format_processing_status(prompt, current_cwd, session_mode):
-    rel_dir = current_cwd.replace("/root", "~")
-    if session_mode == "continue":
-        sess_label = "💬 Sesi Lanjut"
-    elif session_mode == "new":
-        sess_label = "🆕 Sesi Baru"
-    else:
-        sess_label = f"🔖 Sesi ({session_mode[:8]}...)"
-    
-    clean_p = prompt.strip().replace("\n", " ")
-    p_short = f"\"{clean_p[:60]}...\"" if len(clean_p) > 60 else f"\"{clean_p}\""
-    start_time_str = datetime.now().strftime("%H:%M:%S WIB")
-
-    status_text = (
-        "🚀 *ANTIGRAVITY AGENTIC AI INITIALIZED*\n"
-        "━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⚡ *Status:* `🔄 Processing Task...`\n"
-        f"💬 *Prompt:* `{p_short}`\n"
-        f"🔖 *Mode Sesi:* `{sess_label}`\n"
-        f"📂 *Workspace:* `{rel_dir}`\n"
-        f"⏰ *Started:* `{start_time_str}`\n"
-        "━━━━━━━━━━━━━━━━━━━━━\n"
-        "⏳ _Antigravity Engine sedang menganalisis & mengeksekusi instruksi..._"
-    )
-    return status_text
+    return "⏳ *Step 1: Memproses perintah...*"
 
 def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="continue"):
     start_time = time.time()
@@ -862,6 +839,8 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
                             pass
             except Exception:
                 pass
+
+        edit_message(chat_id, status_msg_id, "🔄 *Step 2: Menganalisis & mengeksekusi tugas...*", parse_mode="Markdown")
 
         cmd = [
             AGY_BIN,
@@ -886,26 +865,10 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
         )
         
         output, _ = process.communicate(timeout=300)
-        output = output.strip() if output else "✅ Perintah selesai dijalankan."
+        output = output.strip() if output else "Perintah selesai dijalankan."
 
-        elapsed_sec = time.time() - start_time
         clean_out = clean_ai_output(output)
-        rel_dir = work_dir.replace("/root", "~")
-        
-        clean_p = prompt.strip().replace("\n", " ")
-        p_short = f"\"{clean_p[:60]}...\"" if len(clean_p) > 60 else f"\"{clean_p}\""
-
-        result_header = (
-            "⚡ *ANTIGRAVITY AI EXECUTION COMPLETED*\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📂 *Workspace:* `{rel_dir}`\n"
-            f"⏱️ *Duration:* `{elapsed_sec:.1f}s`\n"
-            f"💬 *Prompt:* `{p_short}`\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "📌 *HASIL & LAPORAN EKSEKUSI:*\n\n"
-        )
-        result_footer = "\n\n━━━━━━━━━━━━━━━━━━━━━\n✅ *Tugas berhasil diselesaikan oleh Antigravity AI.*"
-        full_output = result_header + clean_out + result_footer
+        full_output = f"✅ *Finish.*\n━━━━━━━━━━━━━━━━━━━━━\n\n{clean_out}"
         
         edit_message(chat_id, status_msg_id, full_output, parse_mode="Markdown")
 
