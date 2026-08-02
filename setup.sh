@@ -89,7 +89,10 @@ apt-get install -y --no-install-recommends \
     libreoffice-writer \
     libreoffice-calc \
     libreoffice-impress \
-    libreoffice-draw
+    libreoffice-draw \
+    jq \
+    ripgrep \
+    fd-find
 
 # 4. Install Node.js (v20) if not present
 if ! command -v node &> /dev/null; then
