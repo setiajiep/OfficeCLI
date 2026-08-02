@@ -267,11 +267,15 @@ def add_watermark(img_path, text, position='bottom-right', font_size=36, color="
         return output_path
 
 def convert_format(img_path, target_ext="png", output_path=None):
-    """Convert image to JPG, PNG, WEBP, BMP, PDF, etc."""
+    """Convert image or image folder to JPG, PNG, WEBP, BMP, PDF, etc."""
     if not os.path.exists(img_path):
-        print(f"❌ File gambar tidak ditemukan: {img_path}")
+        print(f"❌ File/Folder gambar tidak ditemukan: {img_path}")
         return None
     target_ext = target_ext.lstrip('.').lower()
+    if os.path.isdir(img_path):
+        if target_ext == 'pdf':
+            from office_tools import folder_to_pdf
+            return folder_to_pdf(img_path, output_path=output_path)
     if output_path is None:
         base, _ = os.path.splitext(img_path)
         output_path = f"{base}.{target_ext}"
@@ -496,10 +500,17 @@ def create_pas_foto(img_path, size='3x4', bg_color='red', output_path=None):
     return output_path
 
 def batch_process_images(folder_path, action="compress", output_dir=None, **kwargs):
-    """Batch process all images in a folder (compress, watermark, convert, pas_foto)"""
+    """Batch process all images in a folder (compress, watermark, convert, pas_foto, pdf)"""
     if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
         print(f"❌ Folder tidak ditemukan: {folder_path}")
         return []
+
+    action_clean = action.lstrip('.').lower()
+    if action_clean in ["pdf", "to_pdf", "convert_pdf"]:
+        from office_tools import folder_to_pdf
+        pdf_out = os.path.join(output_dir, f"{os.path.basename(folder_path.rstrip('/\\'))}.pdf") if output_dir else None
+        res = folder_to_pdf(folder_path, output_path=pdf_out)
+        return [res] if res else []
 
     if output_dir is None:
         output_dir = os.path.join(folder_path, f"batch_{action}_{int(time.time())}")

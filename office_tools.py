@@ -18,11 +18,15 @@ from telegram_utils import prompt_send_to_telegram, send_file_to_telegram
 # ---------------------------------------------------------
 
 def convert_to_pdf(input_path, output_dir=None):
-    """Convert DOCX, XLSX, PPTX, HTML, TXT to PDF using LibreOffice headless"""
+    """Convert DOCX, XLSX, PPTX, HTML, TXT or a folder of images to PDF"""
     if not os.path.exists(input_path):
-        print(f"❌ File tidak ditemukan: {input_path}")
+        print(f"❌ Path tidak ditemukan: {input_path}")
         return None
     
+    if os.path.isdir(input_path):
+        out_pdf = os.path.join(output_dir, f"{os.path.basename(input_path.rstrip('/\\\\'))}.pdf") if output_dir else None
+        return folder_to_pdf(input_path, output_path=out_pdf)
+        
     if output_dir is None:
         output_dir = os.path.dirname(os.path.abspath(input_path))
         
@@ -35,7 +39,11 @@ def convert_to_pdf(input_path, output_dir=None):
             print(f"✅ Berhasil konversi ke PDF: {out_pdf}")
             return out_pdf
     except Exception as e:
-        print(f"❌ Gagal konversi PDF: {e}")
+        print(f"❌ Gagal konversi PDF dengan LibreOffice: {e}")
+        ext = os.path.splitext(input_path)[1].lower()
+        if ext in ['.png', '.jpg', '.jpeg', '.webp', '.bmp']:
+            out_name = os.path.splitext(os.path.basename(input_path))[0] + ".pdf"
+            return images_to_pdf([input_path], output_path=os.path.join(output_dir, out_name))
     return None
 
 def extract_text(file_path):
@@ -508,19 +516,42 @@ def pdf_to_images(pdf_path, output_dir=None):
         return []
 
 def images_to_pdf(img_list, output_path=None):
-    """Combine multiple images into a single PDF file"""
+    """Combine multiple images or folders of images into a single PDF file"""
     from PIL import Image
-    valid_imgs = [f for f in img_list if os.path.exists(f)]
-    if not valid_imgs:
+    if isinstance(img_list, str):
+        img_list = [img_list]
+    
+    valid_exts = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
+    extracted_imgs = []
+    
+    for item in img_list:
+        if not os.path.exists(item):
+            continue
+        if os.path.isdir(item):
+            for root_dir, _, files in os.walk(item):
+                for fname in sorted(files):
+                    if fname.lower().endswith(valid_exts):
+                        extracted_imgs.append(os.path.join(root_dir, fname))
+        elif item.lower().endswith(valid_exts):
+            extracted_imgs.append(item)
+            
+    extracted_imgs.sort()
+    
+    if not extracted_imgs:
         print("❌ Tidak ada file gambar yang valid.")
         return None
 
     if output_path is None:
-        first_dir = os.path.dirname(os.path.abspath(valid_imgs[0]))
-        output_path = os.path.join(first_dir, f"album_{int(time.time())}.pdf")
+        first_item = img_list[0]
+        if os.path.isdir(first_item):
+            folder_name = os.path.basename(first_item.rstrip('/\\'))
+            output_path = os.path.join(first_item, f"{folder_name}.pdf")
+        else:
+            first_dir = os.path.dirname(os.path.abspath(first_item))
+            output_path = os.path.join(first_dir, f"album_{int(time.time())}.pdf")
 
     pil_images = []
-    for f in valid_imgs:
+    for f in extracted_imgs:
         try:
             im = Image.open(f).convert("RGB")
             pil_images.append(im)
@@ -532,6 +563,16 @@ def images_to_pdf(img_list, output_path=None):
         print(f"✅ Berhasil menggabungkan {len(pil_images)} gambar ke PDF: {output_path}")
         return output_path
     return None
+
+def folder_to_pdf(folder_path, output_path=None):
+    """Combine all image files inside a folder into a single PDF document inside the folder or output path"""
+    if not os.path.exists(folder_path):
+        print(f"❌ Folder tidak ditemukan: {folder_path}")
+        return None
+    if not os.path.isdir(folder_path):
+        print(f"❌ Path bukan folder: {folder_path}")
+        return None
+    return images_to_pdf([folder_path], output_path=output_path)
 
 
 # ---------------------------------------------------------
@@ -935,6 +976,10 @@ Gunakan flag --send-telegram atau -t untuk pengiriman otomatis.
     elif action == "img2pdf" and len(args) > 1:
         img_inputs = args[1:]
         result_file = images_to_pdf(img_inputs)
+    elif action == "folder_to_pdf" and len(args) > 1:
+        folder_p = args[1]
+        out_p = args[2] if len(args) > 2 else None
+        result_file = folder_to_pdf(folder_p, output_path=out_p)
 
     elif action == "create_docx":
         out = args[1] if len(args) > 1 and args[1] != "-" else None

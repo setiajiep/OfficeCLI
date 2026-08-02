@@ -679,10 +679,13 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         before_files = {}
         if os.path.exists(work_dir):
             try:
-                for fname in os.listdir(work_dir):
-                    fpath = os.path.join(work_dir, fname)
-                    if os.path.isfile(fpath):
-                        before_files[fname] = os.path.getmtime(fpath)
+                for root_path, dirs, files in os.walk(work_dir):
+                    for fname in files:
+                        full_p = os.path.join(root_path, fname)
+                        try:
+                            before_files[full_p] = os.path.getmtime(full_p)
+                        except Exception:
+                            pass
             except Exception:
                 pass
 
@@ -712,57 +715,46 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
         edit_message(chat_id, status_msg_id, full_output)
 
         sent_files = set()
+        new_pdf_files = []
+        new_doc_files = []
+        new_img_files = []
 
-        # 1. Automatic file delivery for newly created/modified files in work_dir
+        # 1. Recursive scan for newly created/modified files in work_dir (including all subfolders)
         if os.path.exists(work_dir):
             try:
-                for fname in os.listdir(work_dir):
-                    if fname in SYSTEM_FILES or fname.startswith("."):
-                        continue
-                    full_fpath = os.path.join(work_dir, fname)
-                    if os.path.isfile(full_fpath):
-                        mtime = os.path.getmtime(full_fpath)
-                        if fname not in before_files or mtime > (before_files[fname] + 0.01):
-                            if full_fpath not in sent_files:
-                                sent_files.add(full_fpath)
-                                send_document(chat_id, full_fpath, caption=f"📄 Hasil Dokumen/Foto: {fname}")
+                for root_path, dirs, files in os.walk(work_dir):
+                    for fname in files:
+                        if fname in SYSTEM_FILES or fname.startswith("."):
+                            continue
+                        full_fpath = os.path.join(root_path, fname)
+                        if os.path.isfile(full_fpath):
+                            mtime = os.path.getmtime(full_fpath)
+                            if full_fpath not in before_files or mtime > (before_files.get(full_fpath, 0) + 0.01):
+                                ext = os.path.splitext(fname)[1].lower()
+                                if ext == ".pdf":
+                                    new_pdf_files.append(full_fpath)
+                                elif ext in [".docx", ".xlsx", ".pptx", ".zip"]:
+                                    new_doc_files.append(full_fpath)
+                                elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"]:
+                                    new_img_files.append(full_fpath)
             except Exception:
                 pass
 
-        # 2. Extract and send files mentioned directly in AGY output text or referenced .md files
+        # 2. Extract files mentioned directly in AGY output text
         raw_paths = re.findall(r'(?:file://)?(/root/[^\s\)\"\'>]+|[a-zA-Z0-9_\-\./]+\.(?:pdf|docx|xlsx|pptx|png|jpg|jpeg|webp|md))', output)
         for p in raw_paths:
             clean_p = p.replace("file://", "").rstrip(".,;:)")
             target_f = clean_p if clean_p.startswith("/") else os.path.join(work_dir, clean_p)
-
             if os.path.exists(target_f) and os.path.isfile(target_f):
-                if target_f.endswith(".md"):
-                    # Parse markdown file for embedded image links or media references
-                    try:
-                        with open(target_f, "r", encoding="utf-8", errors="ignore") as f:
-                            md_content = f.read()
-                            md_matches = re.findall(r'(?:file://)?(/root/[^\s\)\"\'>]+\.(?:png|jpg|jpeg|webp|pdf|docx|xlsx|pptx))', md_content)
-                            for m_p in md_matches:
-                                m_clean = m_p.replace("file://", "").rstrip(".,;:)")
-                                if os.path.exists(m_clean) and os.path.isfile(m_clean) and m_clean not in sent_files:
-                                    sent_files.add(m_clean)
-                                    ext = os.path.splitext(m_clean)[1].lower()
-                                    if ext in ['.png', '.jpg', '.jpeg', '.webp']:
-                                        send_photo(chat_id, m_clean, caption=f"📸 Hasil Foto Studio: {os.path.basename(m_clean)}")
-                                    else:
-                                        send_document(chat_id, m_clean, caption=f"📄 Dokumen Hasil: {os.path.basename(m_clean)}")
-                    except Exception:
-                        pass
-                else:
-                    if target_f not in sent_files and os.path.basename(target_f) not in SYSTEM_FILES:
-                        sent_files.add(target_f)
-                        ext = os.path.splitext(target_f)[1].lower()
-                        if ext in ['.png', '.jpg', '.jpeg', '.webp']:
-                            send_photo(chat_id, target_f, caption=f"📸 Hasil Foto: {os.path.basename(target_f)}")
-                        else:
-                            send_document(chat_id, target_f, caption=f"📄 Dokumen/Foto Terkait: {os.path.basename(target_f)}")
+                ext = os.path.splitext(target_f)[1].lower()
+                if ext == ".pdf" and target_f not in new_pdf_files:
+                    new_pdf_files.append(target_f)
+                elif ext in [".docx", ".xlsx", ".pptx", ".zip"] and target_f not in new_doc_files:
+                    new_doc_files.append(target_f)
+                elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"] and target_f not in new_img_files:
+                    new_img_files.append(target_f)
 
-        # 3. Search brain artifact directory for newly created photos & documents
+        # 3. Check brain artifact directory for newly created photos & documents
         brain_dir = "/root/.gemini/antigravity-cli/brain"
         if os.path.exists(brain_dir):
             try:
@@ -772,16 +764,56 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir):
                         if ext in ['.png', '.jpg', '.jpeg', '.webp', '.pdf', '.docx', '.xlsx', '.pptx']:
                             full_p = os.path.join(root_path, fname)
                             try:
-                                if os.path.getmtime(full_p) >= (start_time - 10) and full_p not in sent_files:
-                                    sent_files.add(full_p)
-                                    if ext in ['.png', '.jpg', '.jpeg', '.webp']:
-                                        send_photo(chat_id, full_p, caption=f"📸 Hasil Foto Studio AI: {fname}")
-                                    else:
-                                        send_document(chat_id, full_p, caption=f"📄 Hasil Dokumen AI: {fname}")
+                                if os.path.getmtime(full_p) >= (start_time - 10):
+                                    if ext == ".pdf" and full_p not in new_pdf_files:
+                                        new_pdf_files.append(full_p)
+                                    elif ext in [".docx", ".xlsx", ".pptx", ".zip"] and full_p not in new_doc_files:
+                                        new_doc_files.append(full_p)
+                                    elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp"] and full_p not in new_img_files:
+                                        new_img_files.append(full_p)
                             except Exception:
                                 pass
             except Exception:
                 pass
+
+        # --- SMART FILE DELIVERY LOGIC ---
+        # Priority 1: Send all PDF documents first
+        for pdf_f in new_pdf_files:
+            if pdf_f not in sent_files and os.path.basename(pdf_f) not in SYSTEM_FILES:
+                sent_files.add(pdf_f)
+                send_document(chat_id, pdf_f, caption=f"📕 Hasil PDF: {os.path.basename(pdf_f)}")
+
+        # Priority 2: Send Office Documents
+        for doc_f in new_doc_files:
+            if doc_f not in sent_files and os.path.basename(doc_f) not in SYSTEM_FILES:
+                sent_files.add(doc_f)
+                send_document(chat_id, doc_f, caption=f"📄 Hasil Dokumen: {os.path.basename(doc_f)}")
+
+        # Priority 3: Send Images (Filter out PDF page previews if PDFs were created)
+        has_pdfs = len(new_pdf_files) > 0
+        filtered_imgs = []
+        for img_f in new_img_files:
+            bname = os.path.basename(img_f).lower()
+            if has_pdfs and (bname.startswith("preview_") or bname.startswith("page_") or "page_img" in img_f or "_preview" in bname):
+                continue
+            filtered_imgs.append(img_f)
+
+        if filtered_imgs:
+            if len(filtered_imgs) > 5 and not has_pdfs:
+                try:
+                    from office_tools import create_zip
+                    zip_out = os.path.join(work_dir, f"hasil_gambar_{int(time.time())}.zip")
+                    create_zip(work_dir, zip_out)
+                    if os.path.exists(zip_out):
+                        send_document(chat_id, zip_out, caption=f"📦 Total {len(filtered_imgs)} foto dipack ke ZIP: {os.path.basename(zip_out)}")
+                        sent_files.add(zip_out)
+                except Exception:
+                    pass
+
+            for img_f in filtered_imgs[:5]:
+                if img_f not in sent_files and os.path.basename(img_f) not in SYSTEM_FILES:
+                    sent_files.add(img_f)
+                    send_photo(chat_id, img_f, caption=f"📸 Hasil Foto: {os.path.basename(img_f)}")
 
     except subprocess.TimeoutExpired:
         process.kill()
@@ -802,6 +834,62 @@ def process_callback_query(cq):
         return
 
     current_cwd = get_user_cwd(user_id)
+
+    if data == "menu_ask_agy":
+        answer_callback_query(cq_id, "🤖 Silakan ketik pesan/prompt Anda!")
+        send_message(chat_id, "🤖 *ANTIGRAVITY AI (AGY)*\n━━━━━━━━━━━━━━━━━━━━━\nKetik pesan/instruksi atau kirim Voice Note kapan saja untuk diproses oleh AGY AI!", parse_mode="Markdown")
+        return
+
+    if data == "menu_sys_status":
+        answer_callback_query(cq_id, "📊 Loading status...")
+        st = get_system_status()
+        status_text = (
+            "📊 *REAL-TIME VPS SYSTEM DASHBOARD*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"⏱️ *Uptime:* `{st.get('uptime', 'N/A')}`\n"
+            f"⚡ *CPU Load:* `{st.get('cpu_load', 'N/A')}`\n"
+            f"🧠 *RAM Used:* `{st.get('mem_used_mb', 0):.1f} MB / {st.get('mem_total_mb', 0):.1f} MB ({st.get('mem_percent', 0):.1f}%)`\n"
+            f"💾 *Disk Free:* `{st.get('disk_free_gb', 0):.2f} GB / {st.get('disk_total_gb', 0):.2f} GB ({st.get('disk_percent', 0):.1f}% used)`\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "🤖 *Bot Service:* Running & Active\n"
+            "⚡ *AI Engine:* Antigravity CLI Active"
+        )
+        send_message(chat_id, status_text, parse_mode="Markdown")
+        return
+
+    if data == "menu_backup":
+        answer_callback_query(cq_id, "📦 Triggering backup...")
+        send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
+        subprocess.Popen(["/root/backup_vps.sh"], cwd="/root")
+        return
+
+    if data == "menu_help":
+        answer_callback_query(cq_id, "❓ Panduan AGY AI")
+        help_txt = (
+            "🤖 *ANTIGRAVITY AI (AGY) TELEGRAM CONTROLLER*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "💬 *INTERAKSI DENGAN AGY AI:*\n"
+            "• Kirim pesan teks secara bebas -> Diproses otomatis oleh Antigravity AI (`agy`).\n"
+            "• Kirim *Voice Note* -> Otomatis ditranskrip & dieksekusi oleh AGY AI.\n\n"
+            "💻 *PERINTAH BASH & SYSTEM:*\n"
+            "• `/exec <command>` : Eksekusi perintah bash langsung di VPS.\n"
+            "• `/status` : Dashboard status RAM, CPU, dan Storage Disk VPS.\n"
+            "• `/chart` : Grafik real-time pemakaian sistem VPS.\n"
+            "• `/top` : Process manager dengan fitur terminate PID.\n"
+            "• `/services` : Status layanan systemd.\n"
+            "• `/web <url>` : Scrape dan baca isi halaman web.\n\n"
+            "📂 *FILE MANAGER & DIREKTORI:*\n"
+            "• `/fm` : Buka File Manager interaktif.\n"
+            "• `/cd <path>` : Pindah direktori kerja.\n"
+            "• `/pwd` : Tampilkan direktori saat ini.\n"
+            "• `/mkdir <nama>` | `/rm <nama>` | `/rename <lama> <baru>`\n"
+            "• `/download <file>` : Unduh file langsung dari VPS.\n\n"
+            "📦 *BACKUP & UTILITY:*\n"
+            "• `/backup` : Trigger backup otomatis ke GitHub & Telegram.\n"
+            "• `/menu` : Munculkan kembali tombol keyboard menu utama."
+        )
+        send_message(chat_id, help_txt, parse_mode="Markdown")
+        return
 
     if data.startswith("fm_cd:"):
         parts = data.split("fm_cd:", 1)[1].split(":")
@@ -832,6 +920,8 @@ def process_callback_query(cq):
         
         btn = {"inline_keyboard": [
             [{"text": "📂 Masuk ke Folder Ini", "callback_data": f"fm_cd:{target_key}:1"}],
+            [{"text": "📕 Convert Folder Ini ke PDF", "callback_data": f"fm_folder_to_pdf:{target_key}"}],
+            [{"text": "📦 Zip Folder Ini", "callback_data": f"fm_action:zip_item:{target_key}"}],
             [{"text": "🗑️ Hapus Folder Ini", "callback_data": f"fm_rm_confirm:{target_key}"}],
             [{"text": "🔙 Kembali", "callback_data": f"fm_cd:{parent_key}:1"}]
         ]}
@@ -1076,6 +1166,28 @@ def process_callback_query(cq):
         except Exception as e:
             send_message(chat_id, f"❌ Error konversi: {e}")
 
+    elif data.startswith("fm_folder_to_pdf:"):
+        f_key = data.split("fm_folder_to_pdf:", 1)[1]
+        folder_path = decode_path(f_key)
+        folder_name = os.path.basename(folder_path.rstrip('/\\'))
+        answer_callback_query(cq_id, f"📕 Mengonversi Folder '{folder_name}' ke PDF...")
+        send_message(chat_id, f"📕 Menggabungkan gambar di folder `{folder_name}` menjadi 1 file PDF...")
+        try:
+            res = subprocess.run(["python3", OFFICE_TOOLS, "folder_to_pdf", folder_path], capture_output=True, text=True)
+            out_pdf = os.path.join(folder_path, f"{folder_name}.pdf")
+            if not os.path.exists(out_pdf):
+                lines = res.stdout.strip().splitlines() if res.stdout else []
+                for line in reversed(lines):
+                    if line.startswith("✅") and ".pdf" in line:
+                        out_pdf = line.split(":")[-1].strip()
+                        break
+            if os.path.exists(out_pdf):
+                send_document(chat_id, out_pdf, caption=f"📕 Hasil PDF dari Folder '{folder_name}': {os.path.basename(out_pdf)}")
+            else:
+                send_message(chat_id, f"❌ Konversi PDF folder gagal: {res.stderr or res.stdout}")
+        except Exception as e:
+            send_message(chat_id, f"❌ Error konversi folder PDF: {e}")
+
     elif data.startswith("fm_extract_text:"):
         fl_key = data.split("fm_extract_text:", 1)[1]
         file_path = decode_path(fl_key)
@@ -1293,7 +1405,7 @@ def process_callback_query(cq):
         elif action == "do_backup":
             answer_callback_query(cq_id, "📦 Mengirim Backup VPS...")
             send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
-            subprocess.Popen(["/root/backup_vps.sh"], cwd="/root")
+            subprocess.Popen(["/root/backup_vps.sh", str(chat_id)], cwd="/root")
         elif action == "create_folder_prompt":
             answer_callback_query(cq_id, "Ketik nama folder baru...")
             force_reply = {"force_reply": True, "selective": True}
@@ -1345,38 +1457,35 @@ def process_callback_query(cq):
 
 def setup_bot_commands():
     commands = [
-        {"command": "start", "description": "🚀 Dashboard & Menu Utama"},
-        {"command": "menu", "description": "📱 Tombol Menu Keyboard Serba Bisa"},
-        {"command": "createdoc", "description": "📝 Buat Dokumen (DOCX, Excel, PDF, PPTX)"},
-        {"command": "createimg", "description": "🖼️ Buat Gambar, Banner & QR Code"},
-        {"command": "pasfoto", "description": "📸 Generator Pas Foto Formal (Red/Blue BG)"},
-        {"command": "pdfsuite", "description": "🔒 PDF Power Suite (Protect/Compress/Convert)"},
+        {"command": "start", "description": "🚀 Dashboard & Menu Utama AGY"},
+        {"command": "menu", "description": "📱 Tampilkan Tombol Menu Keyboard"},
         {"command": "fm", "description": "📂 File Manager Interaktif"},
-        {"command": "status", "description": "📊 Status VPS (RAM, CPU, Disk)"},
-        {"command": "chart", "description": "📈 Chart Analytics Visual VPS"},
-        {"command": "top", "description": "⚡ Process Manager & Terminate PID"},
-        {"command": "services", "description": "🛠️ Service Systemd Monitor"},
+        {"command": "exec", "description": "💻 Eksekusi Perintah Bash VPS"},
+        {"command": "status", "description": "📊 Status Resources VPS (RAM/CPU/Disk)"},
+        {"command": "chart", "description": "📈 Grafik Real-time Analytics VPS"},
+        {"command": "top", "description": "⚡ Process Manager & PID Monitor"},
+        {"command": "services", "description": "🛠️ Status Systemd Services"},
         {"command": "web", "description": "🌐 Scraper & Reader Halaman Web"},
         {"command": "backup", "description": "📦 Backup VPS ke GitHub & Telegram"},
         {"command": "closemenu", "description": "🙈 Sembunyikan Tombol Menu Keyboard"},
-        {"command": "help", "description": "❓ Panduan & Cara Penggunaan"}
+        {"command": "help", "description": "❓ Panduan & Cara Penggunaan AGY"}
     ]
     api_request("setMyCommands", {"commands": commands})
 
 def get_main_menu_keyboard():
     return {
         "keyboard": [
-            [{"text": "📂 File Manager"}, {"text": "📝 Buat Dokumen"}],
-            [{"text": "🖼️ Buat Gambar"}, {"text": "📸 Pas Foto Formal"}],
-            [{"text": "🔒 PDF Power Suite"}, {"text": "📊 Status VPS"}],
-            [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
-            [{"text": "🛠️ Services"}, {"text": "📦 Backup VPS"}],
+            [{"text": "🤖 Tanya AGY AI"}, {"text": "📂 File Manager"}],
+            [{"text": "📊 Status VPS"}, {"text": "📈 Chart VPS"}],
+            [{"text": "⚡ Top Processes"}, {"text": "🛠️ Services"}],
+            [{"text": "💻 Exec Bash"}, {"text": "📦 Backup VPS"}],
             [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}],
             [{"text": "🙈 Sembunyikan Menu"}]
         ],
         "resize_keyboard": True,
         "is_persistent": True
     }
+
 
 
 def process_update(update):
@@ -1772,21 +1881,23 @@ def process_update(update):
         ram_pct = st.get('mem_percent', 0)
         
         menu_text = (
-            "🚀 *OFFICE CLI & PHOTO AI DASHBOARD*\n"
+            "🤖 *GOOGLE ANTIGRAVITY (AGY) AI DASHBOARD*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "🟢 *System Status:* `Online & Operational`\n"
             f"🧠 *RAM Used:* `{ram_used:.1f} MB ({ram_pct:.1f}%)` | 💾 *Free Disk:* `{disk_free:.1f} GB`\n"
-            "🤖 *AI Engine:* `Antigravity 2.0 (Active)`\n"
+            "⚡ *AI Engine:* `Google Antigravity (agy v1.1.9)`\n"
+            f"📍 *Current Path:* `{current_cwd}`\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "📱 *PILIH MENU CEPAT:* Tap tombol keyboard di bawah untuk akses instant ke fitur dokumen, foto, pas foto, & VPS.\n\n"
-            "💡 *Tips Pintar:*\n"
-            "• Kirim *Voice Note* untuk instruksi AI otomatis!\n"
-            "• Upload foto/dokumen + instruksi di Caption untuk edit langsung!"
+            "📱 *PILIH MENU CEPAT:* Tap tombol keyboard di bawah atau langsung kirim pesan ke bot!\n\n"
+            "💡 *Cara Interaksi dengan AGY:*\n"
+            "• *Teks Prompt* -> Tulis pesan apa saja, AGY AI akan langsung mengeksekusi!\n"
+            "• *Voice Note* -> Ucapan suara dikonversi otomatis menjadi prompt AGY AI!\n"
+            "• *Perintah Bash* -> Gunakan `/exec <command>` untuk jalankan bash command."
         )
         inline_dash = {"inline_keyboard": [
-            [{"text": "📂 Buka File Manager", "callback_data": "fm_cd:L3Jvb3Q=:1"}],
-            [{"text": "📝 Buat Dokumen", "callback_data": "create_doc_menu"}, {"text": "🖼️ Buat Gambar", "callback_data": "create_img_menu"}],
-            [{"text": "📸 Pas Foto Formal", "callback_data": "pasfoto_menu"}, {"text": "🔒 PDF Power Suite", "callback_data": "pdf_suite_menu"}]
+            [{"text": "🤖 Tanya AGY AI", "callback_data": "menu_ask_agy"}, {"text": "📂 Buka File Manager", "callback_data": "fm_cd:L3Jvb3Q=:1"}],
+            [{"text": "📊 Status System VPS", "callback_data": "menu_sys_status"}, {"text": "⚡ Process Top", "callback_data": "fm_action:view_procs"}],
+            [{"text": "📦 Backup VPS", "callback_data": "menu_backup"}, {"text": "❓ Panduan & Bantuan", "callback_data": "menu_help"}]
         ]}
         send_message(chat_id, menu_text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
         send_message(chat_id, "⚡ *MENU PINTASAN AKSI INLINE:*", reply_markup=inline_dash, parse_mode="Markdown")
@@ -1806,46 +1917,25 @@ def process_update(update):
         send_message(chat_id, msg_text, reply_markup=reply_markup)
         return
 
-    if text.lower() in ["createdoc", "/createdoc", "buatdokumen"] or text == "📝 Buat Dokumen":
-        text_menu = "📝 *PEMBUAT DOKUMEN DENGAN OFFICE CLI*\n━━━━━━━━━━━━━━━━━━━━━\nPilih jenis dokumen yang ingin dibuat:"
-        btn = {"inline_keyboard": [
-            [{"text": "📘 Word (.docx)", "callback_data": "create_doc_type:docx"}],
-            [{"text": "📊 Excel (.xlsx)", "callback_data": "create_doc_type:xlsx"}],
-            [{"text": "📕 PDF Document", "callback_data": "create_doc_type:pdf"}],
-            [{"text": "📙 PowerPoint (.pptx)", "callback_data": "create_doc_type:pptx"}]
-        ]}
-        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
+    if text in ["🤖 Tanya AGY AI", "/ask", "/agy"]:
+        send_message(
+            chat_id,
+            "🤖 *TANYA ANTIGRAVITY AI (AGY)*\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Silakan ketik instruksi atau prompt Anda secara langsung di chat ini, atau kirim *Voice Note*!\n\n"
+            "AGY AI akan merespons dan mengeksekusi tugas Anda secara otomatis di VPS.",
+            parse_mode="Markdown"
+        )
         return
 
-    if text.lower() in ["createimg", "/createimg", "buatgambar"] or text == "🖼️ Buat Gambar":
-        text_menu = "🖼️ *PEMBUAT GAMBAR & QR CODE*\n━━━━━━━━━━━━━━━━━━━━━\nPilih jenis gambar yang ingin dibuat:"
-        btn = {"inline_keyboard": [
-            [{"text": "🎨 Kartu / Banner Gambar", "callback_data": "create_img_type:banner"}],
-            [{"text": "📱 QR Code Generator", "callback_data": "create_img_type:qr"}]
-        ]}
-        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
+    if text in ["💻 Exec Bash", "💻 Run Bash", "/exec_help"]:
+        send_message(
+            chat_id,
+            "💻 *EKSEKUSI PERINTAH BASH*\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Ketik perintah terminal dengan format:\n`/exec <perintah>`\n\n"
+            "Contoh:\n• `/exec ls -la`\n• `/exec df -h`\n• `/exec uptime`",
+            parse_mode="Markdown"
+        )
         return
-
-    if text.lower() in ["pasfoto", "/pasfoto"] or text == "📸 Pas Foto Formal":
-        text_menu = "📸 *GENERATOR PAS FOTO FORMAL INDONESIA*\n━━━━━━━━━━━━━━━━━━━━━\nPilih instruksi pas foto atau buka File Manager untuk pilih foto:"
-        btn = {"inline_keyboard": [
-            [{"text": "🔴 Pas Foto Merah 3x4", "callback_data": "pasfoto_guide:red_3x4"}, {"text": "🔵 Pas Foto Biru 3x4", "callback_data": "pasfoto_guide:blue_3x4"}],
-            [{"text": "🔴 Pas Foto Merah 4x6", "callback_data": "pasfoto_guide:red_4x6"}, {"text": "🔵 Pas Foto Biru 4x6", "callback_data": "pasfoto_guide:blue_4x6"}],
-            [{"text": "📂 Buka File Manager Pilih Foto", "callback_data": "fm_cd:L3Jvb3Q=:1"}]
-        ]}
-        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
-        return
-
-    if text.lower() in ["pdfsuite", "/pdfsuite"] or text == "🔒 PDF Power Suite":
-        text_menu = "🔒 *PDF POWER SUITE & SECURITY*\n━━━━━━━━━━━━━━━━━━━━━\nPilih fungsi PDF yang ingin digunakan:"
-        btn = {"inline_keyboard": [
-            [{"text": "📕 Convert ke PDF", "callback_data": "create_doc_type:pdf"}],
-            [{"text": "📂 Buka File Manager PDF", "callback_data": "fm_cd:L3Jvb3Q=:1"}]
-        ]}
-        send_message(chat_id, text_menu, reply_markup=btn, parse_mode="Markdown")
-        return
-
-
 
     if text in ["/status", "/sys", "/vps", "📊 Status VPS"]:
         st = get_system_status()
@@ -1858,7 +1948,7 @@ def process_update(update):
             f"💾 *Disk Free:* `{st.get('disk_free_gb', 0):.2f} GB / {st.get('disk_total_gb', 0):.2f} GB ({st.get('disk_percent', 0):.1f}% used)`\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "🤖 *Bot Service:* Running & Active\n"
-            "🏢 *Office CLI & Photo Suite:* Fully Operational"
+            "⚡ *AI Engine:* Antigravity CLI Active"
         )
         send_message(chat_id, status_text, parse_mode="Markdown")
         return
@@ -1908,59 +1998,29 @@ def process_update(update):
         send_message(chat_id, res, parse_mode="Markdown")
         return
 
-    if text.startswith("/zip "):
-        target_name = text[5:].strip()
-        target_path = os.path.join(current_cwd, target_name) if not target_name.startswith("/") else target_name
-        send_message(chat_id, f"📦 Mengompres `{os.path.basename(target_path)}` ke ZIP...")
-        try:
-            res = subprocess.run(["python3", OFFICE_TOOLS, "zip", target_path], capture_output=True, text=True)
-            out_zip = res.stdout.strip()
-            if out_zip and os.path.exists(out_zip):
-                send_document(chat_id, out_zip, caption=f"📦 Hasil Zip Archive: {os.path.basename(out_zip)}")
-            else:
-                send_message(chat_id, f"❌ Gagal zip: {res.stderr}")
-        except Exception as e:
-            send_message(chat_id, f"❌ Error zip: {e}")
-        return
-
-    if text.startswith("/unzip "):
-        zip_name = text[7:].strip()
-        zip_path = os.path.join(current_cwd, zip_name) if not zip_name.startswith("/") else zip_name
-        send_message(chat_id, f"📂 Mengekstrak `{os.path.basename(zip_path)}` ke `{current_cwd}`...")
-        try:
-            res = subprocess.run(["python3", OFFICE_TOOLS, "unzip", zip_path, current_cwd], capture_output=True, text=True)
-            msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1, notice=f"✅ ZIP {os.path.basename(zip_path)} berhasil diekstrak!")
-            send_message(chat_id, msg_text, reply_markup=reply_markup)
-        except Exception as e:
-            send_message(chat_id, f"❌ Error unzip: {e}")
-        return
-
-    if text in ["/help", "/bantuan"]:
+    if text in ["/help", "/bantuan", "❓ Bantuan"]:
         help_txt = (
-            "🏢 *OFFICE CLI, PHOTO SUITE & AI CONTROLLER*\n"
+            "🤖 *ANTIGRAVITY AI (AGY) TELEGRAM CONTROLLER*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🎙️ *PERINTAH SUARA (VOICE COMMANDS):*\n"
-            "• Kirim *Voice Note / Pesan Suara* langsung ke Telegram! Sistem akan mentranskrip ucapan Anda dan langsung mengeksekusi instruksi secara otomatis lewat AI Antigravity.\n\n"
-            "📊 *SYSTEM & MONITORING:*\n"
-            "• `/status` atau `/sys` : Dashboard RAM, CPU & Disk VPS\n"
-            "• `/chart` : Grafik visual real-time statistik RAM & Disk\n"
-            "• `/top` atau `/ps` : Process Manager (dengan tombol terminate PID)\n"
-            "• `/services` : Service Systemd Manager\n"
-            "• `/web <url>` : Scraper / Reader Teks Halaman Web\n\n"
-            "📂 *MANAJEMEN FILE & ARCHIVE:*\n"
-            "• `/fm` atau `/ls` : File Manager interaktif\n"
-            "• `/cd <path>` : Pindah direktori kerja\n"
-            "• `/pwd` : Tampilkan lokasi folder saat ini\n"
-            "• `/mkdir <nama>` | `/touch <nama>` | `/rm <nama>` | `/rename <lama> <baru>`\n"
-            "• `/zip <target>` | `/unzip <file.zip>`\n"
-            "• `/download <file>` | `/merge <out.pdf> <file1.pdf> <file2.pdf>`\n"
-            "• `/exec <cmd>` : Perintah terminal Bash\n"
-            "• `/backup` : Trigger backup VPS ke GitHub & Telegram\n\n"
-            "🖼️ *PHOTO, OCR & MEDIA EDITOR:*\n"
-            "• Upload foto untuk Rotate, Flip, Auto-Crop, Filter, Watermark, Hapus Background, Kompres, Convert, dan *🔍 OCR Baca Teks Gambar*.\n"
-            "• Berikan instruksi edit langsung pada *Caption* foto/dokumen saat diupload!\n\n"
-            "📕 *OFFICE & DOKUMEN SUITE:*\n"
-            "• Konversi ke PDF, Penggabungan/Ekstraksi Halaman PDF, Ekstraksi Teks, *🤖 AI Summarize Dokumen*, atau Tempel Tanda Tangan & Stempel."
+            "💬 *INTERAKSI DENGAN AGY AI:*\n"
+            "• Kirim pesan teks secara bebas -> Diproses otomatis oleh Antigravity AI (`agy`).\n"
+            "• Kirim *Voice Note* -> Otomatis ditranskrip & dieksekusi oleh AGY AI.\n\n"
+            "💻 *PERINTAH BASH & SYSTEM:*\n"
+            "• `/exec <command>` : Eksekusi perintah bash langsung di VPS.\n"
+            "• `/status` : Dashboard status RAM, CPU, dan Storage Disk VPS.\n"
+            "• `/chart` : Grafik real-time pemakaian sistem VPS.\n"
+            "• `/top` : Process manager dengan fitur terminate PID.\n"
+            "• `/services` : Status layanan systemd.\n"
+            "• `/web <url>` : Scrape dan baca isi halaman web.\n\n"
+            "📂 *FILE MANAGER & DIREKTORI:*\n"
+            "• `/fm` : Buka File Manager interaktif.\n"
+            "• `/cd <path>` : Pindah direktori kerja.\n"
+            "• `/pwd` : Tampilkan direktori saat ini.\n"
+            "• `/mkdir <nama>` | `/rm <nama>` | `/rename <lama> <baru>`\n"
+            "• `/download <file>` : Unduh file langsung dari VPS.\n\n"
+            "📦 *BACKUP & UTILITY:*\n"
+            "• `/backup` : Trigger backup otomatis ke GitHub & Telegram.\n"
+            "• `/menu` : Munculkan kembali tombol keyboard menu utama."
         )
         send_message(chat_id, help_txt, parse_mode="Markdown")
         return

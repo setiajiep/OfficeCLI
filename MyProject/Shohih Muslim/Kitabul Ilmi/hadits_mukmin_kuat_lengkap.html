@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Hadits Mukmin Yang Kuat dan Syarah Lengkap Imam An-Nawawi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 12mm 12mm;
+    @bottom-center {
+      content: "— Halaman " counter(page) " dari " counter(pages) " —";
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 8pt;
+      font-weight: 500;
+      color: #64748b;
+    }
+    @bottom-right {
+      content: "Shohih Muslim • Kitabul Qadar";
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+    @bottom-left {
+      content: "Matan & Syarah An-Nawawi (Lengkap)";
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    font-size: 8.8pt;
+    line-height: 1.45;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  /* Header Section */
+  .header-card {
+    background: linear-gradient(135deg, #064e3b 0%, #0f5132 55%, #1e3a8a 100%);
+    color: #ffffff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-bottom: 3.5px solid #d97706;
+  }
+
+  .header-title {
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    color: #fef08a;
+  }
+
+  .header-subtitle {
+    font-size: 8.5pt;
+    font-weight: 400;
+    color: #e2e8f0;
+  }
+
+  /* Section Badges & Cards */
+  .section-badge {
+    display: inline-block;
+    background-color: #0f5132;
+    color: #ffffff;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .chapter-box {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #d97706;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 9px;
+  }
+
+  .arabic-title-text {
+    font-family: 'Amiri', serif;
+    direction: rtl;
+    text-align: right;
+    font-size: 13.5pt;
+    line-height: 1.9;
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .arabic-text {
+    font-family: 'Amiri', serif;
+    direction: rtl;
+    text-align: right;
+    font-size: 13pt;
+    line-height: 1.9;
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .arabic-matan {
+    font-family: 'Amiri', serif;
+    direction: rtl;
+    text-align: right;
+    font-size: 14pt;
+    line-height: 2.05;
+    color: #064e3b;
+    font-weight: 700;
+  }
+
+  .translation-text {
+    font-size: 8.8pt;
+    color: #334155;
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+
+  /* Sanad Box */
+  .sanad-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 9px;
+  }
+
+  .sanad-item {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #cbd5e1;
+  }
+
+  .sanad-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  /* Hadith Matan Master Card */
+  .matan-card {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 4.5px solid #16a34a;
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+
+  .matan-intro {
+    text-align: center;
+    margin-bottom: 7px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #dcfce7;
+  }
+
+  .phrase-block {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+  }
+
+  .phrase-block:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Syarah Banner Header */
+  .syarah-banner {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    color: #ffffff;
+    padding: 9px 13px;
+    border-radius: 6px;
+    margin-bottom: 9px;
+    border-bottom: 3px solid #60a5fa;
+  }
+
+  .syarah-banner-title {
+    font-size: 10.5pt;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #ffffff;
+  }
+
+  .syarah-banner-sub {
+    font-size: 8pt;
+    color: #93c5fd;
+    margin-top: 1px;
+  }
+
+  .syarah-subheading {
+    font-size: 9.2pt;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-top: 9px;
+    margin-bottom: 5px;
+    padding-bottom: 3px;
+    border-bottom: 1.5px solid #cbd5e1;
+  }
+
+  .syarah-point {
+    background-color: #f8fafc;
+    border-left: 3.5px solid #3b82f6;
+    padding: 6px 10px;
+    border-radius: 0 5px 5px 0;
+    margin-bottom: 5px;
+  }
+
+  .syarah-point:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Rules Table / Cards */
+  .rule-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-bottom: 6px;
+  }
+
+  .rule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 8.5pt;
+    margin-bottom: 3px;
+  }
+
+  .tag-allowed {
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 7.5pt;
+    font-weight: 700;
+  }
+
+  .tag-forbidden {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 7.5pt;
+    font-weight: 700;
+  }
+
+  /* Summary Card */
+  .summary-card {
+    background: linear-gradient(to right, #fdf4ff, #fae8ff);
+    border: 1px solid #f5d0fe;
+    border-left: 4.5px solid #c026d3;
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-top: 9px;
+  }
+
+  .summary-title {
+    font-size: 9.2pt;
+    font-weight: 700;
+    color: #76226e;
+    margin-bottom: 4px;
+  }
+
+  .summary-list {
+    padding-left: 15px;
+    color: #4a044e;
+    font-size: 8.3pt;
+  }
+
+  .summary-list li {
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+
+  .highlight {
+    background-color: #fef08a;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+    color: #854d0e;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ================= PAGE 1: HADITH MATAN & SANAD ================= -->
+  
+  <!-- Header Banner -->
+  <div class="header-card">
+    <div class="header-title">Shohih Muslim • Kitabul Qadar</div>
+    <div class="header-subtitle">Hadits No. 2664: Semangat Berikhtiar, Memohon Pertolongan Allah, &amp; Adab Menyikapi Takdir</div>
+  </div>
+
+  <!-- Bab Section -->
+  <div class="chapter-box">
+    <div class="section-badge" style="background-color: #d97706;">Judul Bab (تَرْجَمَةُ الْبَابِ)</div>
+    <div class="arabic-title-text">
+      بَابٌ: فِي الْأَمْرِ بِالْقُوَّةِ وَتَرْكِ الْعَجْزِ، وَالِاسْتِعَانَةِ بِاللَّهِ وَتَفْوِيضِ الْمَقَادِيرِ لِلَّهِ.
+    </div>
+    <div class="translation-text" style="font-weight: 600; color: #78350f;">
+      <strong>Bab:</strong> Tentang perintah untuk bersikap kuat, meninggalkan sifat lemah, memohon pertolongan kepada Allah, serta menyerahkan seluruh takdir kepada Allah.
+    </div>
+  </div>
+
+  <!-- Sanad Section -->
+  <div class="sanad-box">
+    <div class="section-badge" style="background-color: #475569;">Sanad Hadits (Silsilah Perawi)</div>
+    
+    <div class="sanad-item">
+      <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #334155;">
+        حَدَّثَنَا أَبُو بَكْرِ بْنُ أَبِي شَيْبَةَ ، وَابْنُ نُمَيْرٍ ، قَالَا :
+      </div>
+      <div class="translation-text">
+        Telah menceritakan kepada kami Abu Bakr bin Abi Syaibah dan Ibnu Numair, keduanya berkata:
+      </div>
+    </div>
+
+    <div class="sanad-item">
+      <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #334155;">
+        حَدَّثَنَا عَبْدُ اللَّهِ بْنُ إِدْرِيسَ ، عَنْ رَبِيعَةَ بْنِ عُثْمَانَ ، عَنْ مُحَمَّدِ بْنِ يَحْيَى بْنِ حَبَّانَ ، عَنِ الْأَعْرَجِ ، عَنْ أَبِي هُرَيْرَةَ ، قَالَ :
+      </div>
+      <div class="translation-text">
+        Telah menceritakan kepada kami 'Abdullah bin Idris, dari Rabi'ah bin 'Usman, dari Muhammad bin Yahya bin Habban, dari Al-A'raj, dari Abu Hurairah radhiyallahu 'anhu, ia berkata:
+      </div>
+    </div>
+  </div>
+
+  <!-- Matan Hadits Master Card -->
+  <div class="matan-card">
+    <div class="section-badge" style="background-color: #16a34a;">Matan Hadits Lengkap (Sabda Rasulullah SAW)</div>
+    
+    <div class="matan-intro">
+      <div class="arabic-matan" style="font-size: 13.5pt; color: #047857; text-align: center;">
+        قَالَ رَسُولُ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ :
+      </div>
+      <div class="translation-text" style="text-align: center; font-style: italic; font-weight: 600; color: #065f46;">
+        Rasulullah shallallahu 'alaihi wa sallam bersabda:
+      </div>
+    </div>
+
+    <!-- Sentence by Sentence breakdown -->
+    <div class="phrase-block">
+      <div class="arabic-matan">
+        " الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ، وَفِي كُلٍّ خَيْرٌ،
+      </div>
+      <div class="translation-text">
+        "Mukmin yang kuat lebih baik dan lebih dicintai oleh Allah daripada mukmin yang lemah, namun pada masing-masingnya terdapat kebaikan.
+      </div>
+    </div>
+
+    <div class="phrase-block">
+      <div class="arabic-matan">
+        احْرِصْ عَلَى مَا يَنْفَعُكَ، وَاسْتَعِنْ بِاللَّهِ وَلَا تَعْجِزْ،
+      </div>
+      <div class="translation-text">
+        Semangatlah terhadap hal-hal yang bermanfaat bagimu, mohonlah pertolongan kepada Allah, dan janganlah engkau bersikap lemah (menyerah).
+      </div>
+    </div>
+
+    <div class="phrase-block">
+      <div class="arabic-matan">
+        وَإِنْ أَصَابَكَ شَيْءٌ فَلَا تَقُلْ : لَوْ أَنِّي فَعَلْتُ كَانَ كَذَا وَكَذَا،
+      </div>
+      <div class="translation-text">
+        Dan jika ada sesuatu (musibah/kegagalan) yang menimpamu, maka janganlah engkau katakan: 'Seandainya aku melakukan ini dan itu, tentu akan jadi begini dan begitu.'
+      </div>
+    </div>
+
+    <div class="phrase-block">
+      <div class="arabic-matan">
+        وَلَكِنْ قُلْ : قَدَرُ اللَّهِ وَمَا شَاءَ فَعَلَ،
+      </div>
+      <div class="translation-text">
+        Akan tetapi katakanlah: 'Ini adalah takdir Allah, dan apa yang Dia kehendaki, pasti Dia lakukan.'
+      </div>
+    </div>
+
+    <div class="phrase-block">
+      <div class="arabic-matan">
+        فَإِنَّ لَوْ تَفْتَحُ عَمَلَ الشَّيْطَانِ ".
+      </div>
+      <div class="translation-text">
+        Karena sesungguhnya kata 'seandainya' (lau) itu membuka pintu perbuatan syaitan."
+      </div>
+    </div>
+  </div>
+
+  <!-- End of Page 1 -->
+  <div class="page-break"></div>
+
+  <!-- ================= PAGE 2: SYARAH HADITH (BAGIAN I - III) ================= -->
+
+  <!-- Syarah Header Banner -->
+  <div class="syarah-banner">
+    <div class="syarah-banner-title">SYARAH HADITS LENGKAP (Penjelasan Al-Imam An-Nawawi rahimahullah)</div>
+    <div class="syarah-banner-sub">Dipetik dari Kitab Al-Minhaj Sharh Shahih Muslim ibni Al-Hajjaj (Jilid 16)</div>
+  </div>
+
+  <!-- Syarah Pengantar -->
+  <div class="phrase-block" style="background-color: #f1f5f9; border-color: #cbd5e1; margin-bottom: 8px;">
+    <div class="arabic-text" style="font-size: 12.5pt; color: #1e293b;">
+      قَوْلُهُ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ : ( الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ ، وَفِي كُلٍّ خَيْرٌ )
+    </div>
+  </div>
+
+  <!-- Syarah Breakdown I: Makna Kekuatan -->
+  <div class="syarah-subheading">
+    Bagian I: Rincian Hakikat Kekuatan (الْقُوَّة) dalam Agama
+  </div>
+
+  <div class="syarah-point">
+    <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #0f172a;">
+      وَالْمُرَادُ بِالْقُوَّةِ هُنَا : عَزِيمَةُ النَّفْسِ وَالْقَرِيحَةُ فِي أُمُورِ الْآخِرَةِ ،
+    </div>
+    <div class="translation-text">
+      <strong>1. Keteguhan Jiwa &amp; Kecerdasan Niat Akhirat:</strong> Yang dimaksud dengan kekuatan di sini adalah keteguhan jiwa, cita-cita yang tinggi, serta pemikiran yang tajam dalam urusan akhirat dan kebaikan.
+    </div>
+  </div>
+
+  <div class="syarah-point">
+    <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #0f172a;">
+      فَيَكُونُ صَاحِبُ هَذَا الْوَصْفِ أَكْثَرَ إِقْدَامًا عَلَى الْعَدُوِّ فِي الْجِهَادِ ، وَأَسْرَعَ خُرُوجًا إِلَيْهِ ، وَذَهَابًا فِي طَلَبِهِ ،
+    </div>
+    <div class="translation-text">
+      <strong>2. Keberanian &amp; Kesigapan:</strong> Orang yang kuat jiwanya akan lebih berani maju menghadapi musuh dalam perjuangan (jihad), lebih cepat menyongsong panggilan kebaikan, dan sigap mengambil tindakan.
+    </div>
+  </div>
+
+  <div class="syarah-point">
+    <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #0f172a;">
+      وَأَشَدَّ عَزِيمَةً فِي الْأَمْرِ بِالْمَعْرُوفِ ، وَالنَّهْيِ عَنِ الْمُنْكَرِ ، وَالصَّبْرِ عَلَى الْأَذَى فِي كُلِّ ذَلِكَ ،
+    </div>
+    <div class="translation-text">
+      <strong>3. Keteguhan Amar Ma'ruf Nahi Munkar:</strong> Serta memiliki ketetapan hati yang kokoh dalam menegakkan amar ma'ruf nahi munkar, serta bersabar menanggung gangguan saat melaksanakannya.
+    </div>
+  </div>
+
+  <div class="syarah-point">
+    <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #0f172a;">
+      وَاحْتِمَالِ الْمَشَاقِّ فِي ذَاتِ اللَّهِ تَعَالَى ، وَأَرْغَبَ فِي الصَّلَاةِ وَالصَّوْمِ وَالْأَذْكَارِ وَسَائِرِ الْعِبَادَاتِ ، وَأَنشَطَ طَلَبًا لَهَا ، وَمُحَافَظَةً عَلَيْهَا .
+    </div>
+    <div class="translation-text">
+      <strong>4. Ketahanan &amp; Antusiasme Ibadah:</strong> Sanggup menanggung beban kesulitan demi Allah Ta'ala, serta lebih bersemangat dalam mendirikan shalat, berpuasa, berdzikir, dan menjaga kontinuitas ibadah.
+    </div>
+  </div>
+
+  <!-- Syarah Breakdown II: Makna "Pada Masing-masing Ada Kebaikan" -->
+  <div class="syarah-subheading" style="margin-top: 8px;">
+    Bagian II: Hikmah Kalimat "Pada Masing-masing Ada Kebaikan" (وَفِي كُلٍّ خَيْرٌ)
+  </div>
+
+  <div class="syarah-point" style="border-left-color: #059669;">
+    <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #0f172a;">
+      وَأَمَّا قَوْلُهُ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ : " وَفِي كُلٍّ خَيْرٌ " فَمَعْنَاهُ : فِي كُلٍّ مِنَ الْقَوِيِّ وَالضَّعِيفِ خَيْرٌ ؛ لِاشْتِرَاكِهِمَا فِي الْإِيمَانِ ، مَعَ مَا يَأْتِي بِهِ الضَّعِيفُ مِنَ الْعِبَادَاتِ .
+    </div>
+    <div class="translation-text">
+      <strong>Keseimbangan Rahmat &amp; Keimanan:</strong> Maksudnya pada mukmin yang kuat maupun lemah sama-sama terdapat kebaikan karena keduanya berserikat dalam pokok keimanan. Imam An-Nawawi menjelaskan bahwa Nabi SAW menyisipkan kalimat ini agar mukmin yang lemah tidak patah semangat, tidak merasa tersisih, dan tetap dihargai kebaikannya.
+    </div>
+  </div>
+
+  <!-- Syarah Breakdown III: 3 Pilar Kemenangan Seorang Mukmin -->
+  <div class="syarah-subheading" style="margin-top: 8px;">
+    Bagian III: Tiga Pilar Keberhasilan (Semangat, Tawakal, Anti-Lalai)
+  </div>
+
+  <div class="syarah-point" style="border-left-color: #d97706;">
+    <div class="arabic-text" style="font-size: 12pt; line-height: 1.8; color: #0f172a;">
+      قَوْلُهُ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ : ( احْرِصْ عَلَى مَا يَنْفَعُكَ ، وَاسْتَعِنْ بِاللَّهِ ، وَلَا تَعْجِزْ )
+    </div>
+    <div class="translation-text">
+      Imam An-Nawawi menjelaskan:
+      <br>• <strong>احْرِصْ عَلَى مَا يَنْفَعُكَ (Semangat Berikhtiar):</strong> Yakni antusias mengejar ketaatan kepada Allah, kebaikan akhirat, dan urusan duniawi yang mendatangkan manfaat serta ridha Allah.
+      <br>• <strong>وَاسْتَعِنْ بِاللَّهِ (Memohon Pertolongan):</strong> Menyadari bahwa ikhtiar manusia tidak akan berbuah tanpa izin Allah. Manusia tidak boleh sombong atas kemampuannya.
+      <br>• <strong>وَلَا تَعْجِزْ (Jangan Bersikap Lemah):</strong> Dilarang bersikap malas, pasif, atau cepat putus asa dalam beramal maupun dalam berdoa memohon pertolongan Allah.
+    </div>
+  </div>
+
+  <!-- End of Page 2 -->
+  <div class="page-break"></div>
+
+  <!-- ================= PAGE 3: SYARAH HUKUM KATA "LAU" & HIKMAH ================= -->
+
+  <!-- Syarah Header Banner -->
+  <div class="syarah-banner" style="background: linear-gradient(135deg, #7c2d12 0%, #c2410c 100%); border-bottom-color: #fb923c;">
+    <div class="syarah-banner-title">SYARAH HUKUM KATA "SEANDAINYA" (لَوْ) &amp; ADAB TAKDIR</div>
+    <div class="syarah-banner-sub">Klarifikasi Hukum Fiqih &amp; Tasawuf Imam An-Nawawi dan Al-Qadhi 'Iyadh</div>
+  </div>
+
+  <!-- Syarah Breakdown IV: Pandangan Al-Qadhi 'Iyadh & Imam An-Nawawi -->
+  <div class="syarah-subheading">
+    Bagian IV: Pandangan Ulama tentang Larangan Kata "Seandainya" (لَوْ)
+  </div>
+
+  <div class="syarah-point" style="border-left-color: #dc2626;">
+    <div class="arabic-text" style="font-size: 11.5pt; line-height: 1.8; color: #0f172a;">
+      قَالَ الْقَاضِي عِيَاضٌ : أَنَّ النَّهْيَ عَلَى ظَاهِرِهِ وَعُمُومِهِ ، لَكِنَّهُ نَهْيُ تَنْزِيهٍ ، وَيَدُلُّ عَلَيْهِ قَوْلُهُ : " فَإِنَّ لَوْ تَفْتَحُ عَمَلَ الشَّيْطَانِ " أَيْ : يُلْقِي فِي الْقَلْبِ مُعَارَضَةَ الْقَدَرِ ، وَيُوَسْوِسُ بِهِ الشَّيْطَانُ .
+    </div>
+    <div class="translation-text">
+      <strong>Pandangan Al-Qadhi 'Iyadh:</strong> Larangan ini berlaku umum secara lahiriah dengan hukum <em>Makruh Tanzih</em>. Sebabnya, ucapan "seandainya" saat tertimpa musibah akan membukakan pintu bagi syaitan untuk menyuntikkan bisikan penentangan terhadap takdir ke dalam hati.
+    </div>
+  </div>
+
+  <!-- Classification Rules of Lau -->
+  <div class="syarah-subheading" style="margin-top: 8px;">
+    Rincian Pembagian Hukum Penggunaan Kata "Lau" (لو) oleh Imam An-Nawawi:
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span style="color: #991b1b;">1. Digunakan untuk Masa Lalu (الْمَاضِي) + Penentangan Takdir</span>
+      <span class="tag-forbidden">HARAM / MAKRUH</span>
+    </div>
+    <div class="translation-text">
+      Diucapkan saat tertimpa kegagalan/musibah dengan nada penyesalan atau mengandai-andai yang tidak berguna. Ini merusak ridha kepada takdir dan membukakan pintu waswas syaitan.
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span style="color: #166534;">2. Digunakan untuk Masa Lalu (الْمَاضِي) + Penyesalan Ketaatan</span>
+      <span class="tag-allowed">BOLEH (DIBOLEHKAN)</span>
+    </div>
+    <div class="translation-text">
+      Diucapkan karena menyesali ketaatan yang terlewatkan. Dalilnya sabda Nabi SAW: <em>"Seandainya aku dapat mengulang apa yang telah berlalu, niscaya aku tidak membawa hewan kurban."</em> (HR. Muslim).
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span style="color: #166534;">3. Digunakan untuk Masa Depan (الْمُسْتَقْبَل) / Hal dalam Kemampuan</span>
+      <span class="tag-allowed">BOLEH (DIBOLEHKAN)</span>
+    </div>
+    <div class="translation-text">
+      Diucapkan untuk menyampaikan ikhtiar, cita-cita kebaikan, atau pengandaian masa depan. Dalilnya sabda Nabi SAW: <em>"Seandainya tidak memberatkan umatku, niscaya aku perintahkan bersiwak."</em>
+    </div>
+  </div>
+
+  <!-- Syarah Breakdown V: Ucapan Tawakal & Hadits Riwayat Abu Dawud -->
+  <div class="syarah-subheading" style="margin-top: 8px;">
+    Bagian V: Pengganti Kata "Lau" &amp; Hadits Penguat Riwayat Abu Dawud
+  </div>
+
+  <div class="syarah-point" style="border-left-color: #0d9488;">
+    <div class="arabic-text" style="font-size: 11.5pt; line-height: 1.8; color: #0f172a;">
+      وَلَكِنْ قُلْ : ( قَدَرُ اللَّهِ وَمَا شَاءَ فَعَلَ ) - يُرْوَى بِرَفْعِ 'قَدَرُ' (هَذَا قَدَرُ اللَّهِ) وَبِفَتْحِهَا (قَدَّرَ اللَّهُ).
+    </div>
+    <div class="translation-text">
+      <strong>Ucapan Pengganti:</strong> Daripada mengucap "seandainya", seorang mukmin diperintahkan membaca <span class="highlight">"Qadarullahi wa maa syaa-a fa'al"</span>. I'rab kata *Qadar* bisa marfu' (Ini takdir Allah) atau manshub (Allah telah menakdirkan).
+    </div>
+  </div>
+
+  <div class="syarah-point" style="border-left-color: #4f46e5;">
+    <div class="arabic-text" style="font-size: 11.5pt; line-height: 1.8; color: #0f172a;">
+      وَيُؤَيِّدُهُ مَا رَوَى أَبُو دَاوُدَ : " إِنَّ اللَّهَ تَعَالَى يَلُومُ عَلَى الْعَجْزِ ، وَلَكِنْ عَلَيْكَ بِالْكَيْسِ ، فَإِذَا غَلَبَكَ أَمْرٌ فَقُلْ : حَسْبِيَ اللَّهُ وَنِعْمَ الْوَكِيلُ " .
+    </div>
+    <div class="translation-text">
+      <strong>Hadits Penguat (Abu Dawud):</strong> Rasulullah SAW bersabda: <em>"Sesungguhnya Allah mencela sikap lemah/lalai, tetapi hendaknya engkau bersikap cerdas (berikhtiar maksimal). Namun jika suatu urusan mengalahkanmu (setelah berikhtiar), maka ucapkanlah: Hasbiyallahu wa ni'mal wakil."</em>
+    </div>
+  </div>
+
+  <!-- Summary Card -->
+  <div class="summary-card">
+    <div class="summary-title">◆ Ringkasan Hikmah &amp; Kesimpulan Utama:</div>
+    <ul class="summary-list">
+      <li><strong>Integrasi Kekuatan &amp; Iman:</strong> Kekuatan yang dipuji adalah kekuatan tekad, keberanian, dan semangat ibadah, dengan tetap menghormati keimanan mukmin yang lemah.</li>
+      <li><strong>Keseimbangan Ikhtiar &amp; Tawakal:</strong> Kewajiban berjuang maksimal (احرص), memohon pertolongan Allah (استعن بالله), dan tidak boleh pasif atau bersikap lemah (لا تعجز).</li>
+      <li><strong>Adab Menghadapi Takdir:</strong> Menghindari kata "seandainya" yang menyuntikkan penyesalan dan protes takdir, lalu menggantinya dengan kepasrahan rida: <span class="highlight">"Qadarullahi wa maa syaa-a fa'al"</span>.</li>
+    </ul>
+  </div>
+
+</body>
+</html>
