@@ -4,8 +4,8 @@
 [ -f /root/.env ] && export $(grep -v '^#' /root/.env | xargs) 2>/dev/null
 
 # Configuration
-KONTROL_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE}"
-DEFAULT_USER_ID="${TELEGRAM_OWNER_ID:-508687457}"
+KONTROL_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+DEFAULT_USER_ID="${TELEGRAM_OWNER_ID:-}"
 TARGET_CHAT_ID="${1:-$DEFAULT_USER_ID}"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 DATE_STAMP=$(date +"%Y%m%d_%H%M%S")
@@ -27,12 +27,18 @@ BACKUP_ZIP="/tmp/vps_backup_${DATE_STAMP}.zip"
 echo "🤐 Creating Backup Zip file..."
 zip -r "$BACKUP_ZIP" /root/MyProject /root/*.py /root/*.sh /root/*.md /root/*.json /root/.env /root/antigravity-bot.service -x "*.git*" "*__pycache__*" "*.cache*" 2>/dev/null || true
 
+if [ -z "$KONTROL_BOT_TOKEN" ] || [ -z "$TARGET_CHAT_ID" ]; then
+    echo "⚠️ TELEGRAM_BOT_TOKEN or TELEGRAM_OWNER_ID not configured in /root/.env! Skipping Telegram notification."
+    rm -f "$BACKUP_ZIP"
+    exit 0
+fi
+
 if [ $EXIT_CODE -eq 0 ]; then
     MSG="📦 *VPS BACKUP SUCCESSFUL!*
 ━━━━━━━━━━━━━━━━━━━━━
 🕒 *Waktu:* \`$TIMESTAMP\`
 🔗 *GitHub Repo:* [setiajiep/OfficeCLI](https://github.com/setiajiep/OfficeCLI)
-🤖 *Bot Controller:* @Kontrolagybot
+🤖 *Bot Controller Active*
 
 ⚡ *1-BARIS PERINTAH RESTORE DI VPS BARU:*
 \`git clone https://github.com/setiajiep/OfficeCLI.git /root && bash /root/setup.sh\`"

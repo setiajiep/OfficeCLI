@@ -15,7 +15,22 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE")
+def load_env_file():
+    env_path = "/root/.env"
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        v = v.strip("\"'")
+                        os.environ[k.strip()] = v
+        except Exception:
+            pass
+
+load_env_file()
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN_HERE")
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
 AGY_BIN = "/root/.local/bin/agy"
 OFFICE_TOOLS = "/root/office_tools.py"

@@ -17,23 +17,30 @@ echo "🌐 Setting timezone to Asia/Jakarta (WIB)..."
 timedatectl set-timezone Asia/Jakarta 2>/dev/null || ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 
 # 2. Setup Environment (.env) File
-echo "🔑 Configuring Environment File (.env)..."
-TOKEN_INPUT="${TELEGRAM_BOT_TOKEN:-8555802988:AAFwf5YYGQzWRqxMf_YbCpZ19LLev92z6XE}"
-OWNER_INPUT="${TELEGRAM_OWNER_ID:-508687457}"
-
+echo "🔑 Checking Environment File (.env)..."
 if [ ! -f "/root/.env" ]; then
-    cat <<EOF > /root/.env
-TELEGRAM_BOT_TOKEN="$TOKEN_INPUT"
-TELEGRAM_OWNER_ID="$OWNER_INPUT"
-EOF
-    chmod 600 /root/.env
-else
-    # Update TOKEN or OWNER if passed explicitly
-    if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
-        sed -i "s|^TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=\"$TELEGRAM_BOT_TOKEN\"|" /root/.env
+    if [ -f "/root/.env.example" ]; then
+        cp /root/.env.example /root/.env
+    else
+        touch /root/.env
     fi
-    if [ -n "$TELEGRAM_OWNER_ID" ]; then
+    chmod 600 /root/.env
+fi
+
+# Update TOKEN or OWNER if passed explicitly via environment variables
+if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+    if grep -q "^TELEGRAM_BOT_TOKEN=" /root/.env; then
+        sed -i "s|^TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=\"$TELEGRAM_BOT_TOKEN\"|" /root/.env
+    else
+        echo "TELEGRAM_BOT_TOKEN=\"$TELEGRAM_BOT_TOKEN\"" >> /root/.env
+    fi
+fi
+
+if [ -n "$TELEGRAM_OWNER_ID" ]; then
+    if grep -q "^TELEGRAM_OWNER_ID=" /root/.env; then
         sed -i "s|^TELEGRAM_OWNER_ID=.*|TELEGRAM_OWNER_ID=\"$TELEGRAM_OWNER_ID\"|" /root/.env
+    else
+        echo "TELEGRAM_OWNER_ID=\"$TELEGRAM_OWNER_ID\"" >> /root/.env
     fi
 fi
 
@@ -138,7 +145,7 @@ if [ -f "/root/antigravity-bot.service" ]; then
     cp /root/antigravity-bot.service /etc/systemd/system/antigravity-bot.service
     systemctl daemon-reload
     systemctl enable antigravity-bot.service
-    systemctl restart antigravity-bot.service
+    systemctl restart antigravity-bot.service 2>/dev/null || true
 fi
 
 # 11. Configure Daily Auto-Backup Cron Job (00:00 WIB)
@@ -158,8 +165,8 @@ fi
 echo ""
 echo "🎉 ================================================= 🎉"
 echo "✅ VPS SETUP & RESTORE COMPLETED SUCCESSFULLY!"
-echo "🤖 Telegram Bot Service (@Kontrolagybot) is LIVE & ACTIVE!"
 echo "🏢 Office CLI, PDF Suite, Typst & pdfcpu installed!"
 echo "⏰ Daily Backup Cron Job (00:00 WIB) is ACTIVE!"
 echo "🔗 GitHub Sync: https://github.com/setiajiep/OfficeCLI"
+echo "💡 Masukkan Token Telegram di /root/.env jika belum ada."
 echo "🎉 ================================================= 🎉"
