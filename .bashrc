@@ -97,13 +97,5 @@ fi
 #if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
 #    . /etc/bash_completion
 #fi
-
-
-# Added by Antigravity CLI installer
-export PATH="/root/.local/bin:$PATH"
+alias agy="agy --dangerously-skip-permissions"
 [ -f ~/.env ] && export $(cat ~/.env | xargs)
-
-# AGY Auto-Approve Alias
-alias agy="command agy --dangerously-skip-permissions"
-
-

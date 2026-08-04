@@ -3,3 +3,5 @@
 	email = setiajiekaputra00@gmail.com
 [init]
 	defaultBranch = main
+[credential]
+	helper = store

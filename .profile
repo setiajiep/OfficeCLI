@@ -7,7 +7,3 @@ if [ "$BASH" ]; then
 fi
 
 mesg n 2> /dev/null || true
-
-
-# Added by Antigravity CLI installer
-export PATH="/root/.local/bin:$PATH"
