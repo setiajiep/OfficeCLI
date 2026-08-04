@@ -2463,6 +2463,38 @@ def process_update(update):
     # ================================================================
     if EXTRA_FEATURES:
 
+        # Handler command tanpa argumen -> tampilkan panduan
+        cmd_help = {
+            "/qr":        "📲 *QR Code Generator*\nFormat: `/qr <teks atau URL>`\nContoh: `/qr https://google.com`",
+            "/short":     "🔗 *URL Shortener*\nFormat: `/short <url>`\nContoh: `/short https://github.com/setiajiep`",
+            "/yt":        "🎬 *Download Video*\nFormat: `/yt <url>`\nContoh: `/yt https://youtu.be/xxxxx`",
+            "/ytdl":      "🎬 *Download Video*\nFormat: `/ytdl <url>`\nContoh: `/ytdl https://youtu.be/xxxxx`",
+            "/mp3":       "🎵 *Download Audio MP3*\nFormat: `/mp3 <url>`\nContoh: `/mp3 https://youtu.be/xxxxx`",
+            "/ping":      "📡 *Ping Host*\nFormat: `/ping <host>`\nContoh: `/ping google.com`",
+            "/port":      "🔌 *Cek Port*\nFormat: `/port <host> <port>`\nContoh: `/port google.com 443`",
+            "/ip":        "🌍 *IP / Domain Info*\nFormat: `/ip <ip atau domain>`\nContoh: `/ip 8.8.8.8`\nContoh: `/ip cloudflare.com`",
+            "/remind":    "⏰ *Set Reminder*\nFormat: `/remind <durasi> <pesan>`\nContoh: `/remind 5m Minum air putih`\nSatuan: `s`=detik, `m`=menit, `h`=jam",
+            "/alarm":     "⏰ *Set Alarm*\nFormat: `/alarm <durasi> <pesan>`\nContoh: `/alarm 1h Waktunya sholat`",
+            "/calc":      "🧮 *Kalkulator Pintar*\nFormat: `/calc <ekspresi>`\nContoh: `/calc sqrt(144) + 2^8`\nContoh: `/calc sin(3.14/2) * 100`",
+            "/wc":        "📝 *Word Count*\nFormat: `/wc <teks>`\nContoh: `/wc Ini adalah contoh teks yang ingin dihitung`",
+            "/b64":       "🔐 *Encode Base64*\nFormat: `/b64 <teks>`\nContoh: `/b64 Hello World`",
+            "/b64d":      "🔓 *Decode Base64*\nFormat: `/b64d <base64>`\nContoh: `/b64d SGVsbG8gV29ybGQ=`",
+            "/cuaca":     "🌤️ *Info Cuaca*\nFormat: `/cuaca <kota>`\nContoh: `/cuaca Jakarta`\nContoh: `/cuaca Surabaya`",
+            "/weather":   "🌤️ *Cuaca*\nFormat: `/weather <kota>`\nContoh: `/weather Bandung`",
+            "/merge":     "📄 *Merge PDF*\nFormat: `/merge output.pdf file1.pdf file2.pdf`",
+            "/cd":        "📂 *Pindah Direktori*\nFormat: `/cd <path>`\nContoh: `/cd /root/MyProject`",
+            "/mkdir":     "📁 *Buat Folder*\nFormat: `/mkdir <nama_folder>`",
+            "/rm":        "🗑️ *Hapus File/Folder*\nFormat: `/rm <nama>`",
+            "/rename":    "✏️ *Rename File*\nFormat: `/rename <nama_lama> <nama_baru>`",
+            "/download":  "📥 *Download File dari VPS*\nFormat: `/download <nama_file>`",
+            "/exec":      "💻 *Eksekusi Bash*\nFormat: `/exec <perintah>`\nContoh: `/exec df -h`",
+            "/web":       "🌐 *Baca Halaman Web*\nFormat: `/web <url>`\nContoh: `/web https://example.com`",
+            "/touch":     "📄 *Buat File Kosong*\nFormat: `/touch <nama_file>`",
+        }
+        if text.strip() in cmd_help:
+            send_message(chat_id, cmd_help[text.strip()], parse_mode="Markdown")
+            return
+
         # /qr <teks> - Generate QR Code
         if text.startswith("/qr "):
             qr_text = text[4:].strip()
