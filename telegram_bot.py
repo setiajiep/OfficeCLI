@@ -1035,26 +1035,38 @@ def process_callback_query(cq):
         answer_callback_query(cq_id, "❓ Panduan AGY AI")
         help_txt = (
             "🤖 *ANTIGRAVITY AI (AGY) TELEGRAM CONTROLLER*\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             "💬 *INTERAKSI DENGAN AGY AI:*\n"
-            "• Kirim pesan teks secara bebas -> Diproses otomatis oleh Antigravity AI (`agy`).\n"
-            "• Kirim *Voice Note* -> Otomatis ditranskrip & dieksekusi oleh AGY AI.\n\n"
-            "💻 *PERINTAH BASH & SYSTEM:*\n"
-            "• `/exec <command>` : Eksekusi perintah bash langsung di VPS.\n"
-            "• `/status` : Dashboard status RAM, CPU, dan Storage Disk VPS.\n"
-            "• `/chart` : Grafik real-time pemakaian sistem VPS.\n"
-            "• `/top` : Process manager dengan fitur terminate PID.\n"
-            "• `/services` : Status layanan systemd.\n"
-            "• `/web <url>` : Scrape dan baca isi halaman web.\n\n"
-            "📂 *FILE MANAGER & DIREKTORI:*\n"
-            "• `/fm` : Buka File Manager interaktif.\n"
-            "• `/cd <path>` : Pindah direktori kerja.\n"
-            "• `/pwd` : Tampilkan direktori saat ini.\n"
-            "• `/mkdir <nama>` | `/rm <nama>` | `/rename <lama> <baru>`\n"
-            "• `/download <file>` : Unduh file langsung dari VPS.\n\n"
-            "📦 *BACKUP & UTILITY:*\n"
-            "• `/backup` : Trigger backup otomatis ke GitHub & Telegram.\n"
-            "• `/menu` : Munculkan kembali tombol keyboard menu utama."
+            "• Kirim pesan teks bebas → diproses AGY AI\n"
+            "• Kirim *Voice Note* → auto transkrip & eksekusi\n\n"
+            "💻 *BASH & SYSTEM VPS:*\n"
+            "• `/exec <cmd>` — Eksekusi bash di VPS\n"
+            "• `/status` — RAM/CPU/Disk dashboard\n"
+            "• `/chart` — Grafik real-time VPS\n"
+            "• `/top` — Process manager & kill PID\n"
+            "• `/services` — Status systemd services\n"
+            "• `/web <url>` — Scrape halaman web\n\n"
+            "📂 *FILE MANAGER:*\n"
+            "• `/fm` — File Manager interaktif\n"
+            "• `/cd` `/pwd` `/mkdir` `/rm` `/rename` `/download`\n\n"
+            "📲 *TOOLS CANGGIH:*\n"
+            "• `/qr <teks>` — Generate QR Code\n"
+            "• `/short <url>` — Persingkat URL\n"
+            "• `/yt <url>` — Download video YouTube/IG/TikTok\n"
+            "• `/mp3 <url>` — Download audio MP3\n"
+            "• `/ping <host>` — Ping dari VPS\n"
+            "• `/port <host> <port>` — Cek port terbuka\n"
+            "• `/ip <host>` — Geolokasi IP/domain\n"
+            "• `/cuaca <kota>` — Info cuaca\n"
+            "• `/bandwidth` — Test kecepatan VPS\n"
+            "• `/remind <5m> <pesan>` — Set reminder\n"
+            "• `/calc <expr>` — Kalkulator (sin/cos/sqrt)\n"
+            "• `/wc <teks>` — Hitung kata & karakter\n"
+            "• `/b64 <teks>` — Encode Base64\n"
+            "• `/b64d <teks>` — Decode Base64\n\n"
+            "📦 *BACKUP:*\n"
+            "• `/backup` — Backup ke GitHub & Telegram\n"
+            "• `/menu` — Tampilkan keyboard menu"
         )
         send_message(chat_id, help_txt, parse_mode="Markdown")
         return
@@ -1663,8 +1675,22 @@ def setup_bot_commands():
         {"command": "services", "description": "🛠️ Status Systemd Services"},
         {"command": "web", "description": "🌐 Scraper & Reader Halaman Web"},
         {"command": "backup", "description": "📦 Backup VPS ke GitHub & Telegram"},
+        {"command": "qr", "description": "📲 Generate QR Code dari teks/URL"},
+        {"command": "short", "description": "🔗 Persingkat URL via TinyURL"},
+        {"command": "yt", "description": "🎬 Download Video YouTube/IG/TikTok"},
+        {"command": "mp3", "description": "🎵 Download Audio MP3 dari Video"},
+        {"command": "ping", "description": "📡 Ping Host dari VPS"},
+        {"command": "port", "description": "🔌 Cek Apakah Port Terbuka"},
+        {"command": "ip", "description": "🌍 Info Geolokasi IP / Domain"},
+        {"command": "remind", "description": "⏰ Set Reminder / Alarm (contoh: /remind 5m Minum air)"},
+        {"command": "calc", "description": "🧮 Kalkulator Pintar (sin, cos, sqrt, dll)"},
+        {"command": "cuaca", "description": "🌤️ Info Cuaca Kota Manapun"},
+        {"command": "bandwidth", "description": "🚀 Test Bandwidth / Kecepatan VPS"},
+        {"command": "b64", "description": "🔐 Encode Teks ke Base64"},
+        {"command": "b64d", "description": "🔓 Decode Base64 ke Teks"},
+        {"command": "wc", "description": "📝 Hitung Kata & Karakter Teks"},
         {"command": "closemenu", "description": "🙈 Sembunyikan Tombol Menu Keyboard"},
-        {"command": "help", "description": "❓ Panduan & Cara Penggunaan AGY"}
+        {"command": "help", "description": "❓ Panduan Lengkap & Cara Penggunaan"}
     ]
     api_request("setMyCommands", {"commands": commands})
 
@@ -1676,8 +1702,12 @@ def get_main_menu_keyboard():
             [{"text": "📊 Status VPS"}, {"text": "📈 Chart VPS"}],
             [{"text": "⚡ Top Processes"}, {"text": "🛠️ Services"}],
             [{"text": "💻 Exec Bash"}, {"text": "📦 Backup VPS"}],
-            [{"text": "🌐 Web Reader"}, {"text": "❓ Bantuan"}],
-            [{"text": "🙈 Sembunyikan Menu"}]
+            [{"text": "🌐 Web Reader"}, {"text": "🌤️ Cuaca"}],
+            [{"text": "📲 QR Code"}, {"text": "🔗 Short URL"}],
+            [{"text": "🎬 Unduh Video"}, {"text": "🎵 Unduh MP3"}],
+            [{"text": "📡 Ping"}, {"text": "🌍 IP Info"}],
+            [{"text": "🧮 Kalkulator"}, {"text": "🚀 Bandwidth"}],
+            [{"text": "❓ Bantuan"}, {"text": "🙈 Sembunyikan Menu"}]
         ],
         "resize_keyboard": True,
         "is_persistent": True
@@ -2197,6 +2227,45 @@ def process_update(update):
     if text in ["/backup", "/backupvps", "📦 Backup VPS"]:
         send_message(chat_id, "📦 Sedang membuat file backup VPS dan mengirim ke Telegram...")
         subprocess.Popen(["/root/backup_vps.sh"], cwd="/root")
+        return
+
+    if text == "🌤️ Cuaca":
+        send_message(chat_id, "🌤️ *Info Cuaca*\nKirim nama kota:\nContoh: `/cuaca Jakarta`", parse_mode="Markdown")
+        return
+
+    if text == "📲 QR Code":
+        send_message(chat_id, "📲 *Generator QR Code*\nKirim teks atau URL:\nContoh: `/qr https://google.com`", parse_mode="Markdown")
+        return
+
+    if text == "🔗 Short URL":
+        send_message(chat_id, "🔗 *URL Shortener*\nKirim URL panjang:\nContoh: `/short https://github.com/setiajiep/OfficeCLI`", parse_mode="Markdown")
+        return
+
+    if text == "🎬 Unduh Video":
+        send_message(chat_id, "🎬 *Download Video*\nKirim URL YouTube/IG/TikTok/Reel:\nContoh: `/yt https://youtu.be/xxxxx`", parse_mode="Markdown")
+        return
+
+    if text == "🎵 Unduh MP3":
+        send_message(chat_id, "🎵 *Download Audio MP3*\nKirim URL video:\nContoh: `/mp3 https://youtu.be/xxxxx`", parse_mode="Markdown")
+        return
+
+    if text == "📡 Ping":
+        send_message(chat_id, "📡 *Ping Host*\nKirim host yang ingin di-ping:\nContoh: `/ping google.com`", parse_mode="Markdown")
+        return
+
+    if text == "🌍 IP Info":
+        send_message(chat_id, "🌍 *IP / Domain Info*\nKirim IP atau domain:\nContoh: `/ip 8.8.8.8` atau `/ip cloudflare.com`", parse_mode="Markdown")
+        return
+
+    if text == "🧮 Kalkulator":
+        send_message(chat_id, "🧮 *Kalkulator Pintar*\nKirim ekspresi matematika:\nContoh: `/calc sqrt(144) + 2^8`\nContoh: `/calc sin(3.14/2) * 100`", parse_mode="Markdown")
+        return
+
+    if text == "🚀 Bandwidth":
+        send_message(chat_id, "⏳ Testing bandwidth VPS...")
+        if EXTRA_FEATURES:
+            result = check_bandwidth()
+            send_message(chat_id, result, parse_mode="Markdown")
         return
 
     if text == "🌐 Web Reader":
