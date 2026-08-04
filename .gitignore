@@ -13,3 +13,4 @@ MyProject/downloads/
 .ssh/
 .wget-hsts
 .env
+.git-credentials
