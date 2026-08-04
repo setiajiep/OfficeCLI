@@ -135,7 +135,18 @@ pip install --break-system-packages \
     pytesseract \
     SpeechRecognition \
     matplotlib \
-    psutil &>/dev/null || true
+    psutil \
+    opencv-python-headless \
+    rembg \
+    onnxruntime \
+    pdf2image \
+    markdown \
+    scipy \
+    scikit-image \
+    python-telegram-bot \
+    yt-dlp \
+    schedule \
+    requests &>/dev/null || true
 
 # 8. Configure Executable Permissions
 chmod +x /root/telegram_bot.py \
@@ -174,11 +185,34 @@ if ! grep -q '\.env' /root/.bashrc 2>/dev/null; then
     echo '[ -f ~/.env ] && export $(cat ~/.env | xargs)' >> /root/.bashrc
 fi
 
+# 13. Setup AGY binary symlink untuk root
+echo "🔗 Setting up AGY binary for root..."
+mkdir -p /root/.local/bin
+if [ -f "/home/ubuntu/.local/bin/agy" ]; then
+    ln -sf /home/ubuntu/.local/bin/agy /root/.local/bin/agy
+    echo "✅ AGY symlink created: /root/.local/bin/agy"
+elif command -v agy &>/dev/null; then
+    ln -sf "$(which agy)" /root/.local/bin/agy
+    echo "✅ AGY symlink created from: $(which agy)"
+fi
+
+# 14. Setup git credentials jika ada
+if [ -n "$GITHUB_TOKEN" ] && [ -n "$GITHUB_USER" ]; then
+    echo "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com" > /root/.git-credentials
+    chmod 600 /root/.git-credentials
+    git config --global credential.helper store
+    git -C /root remote set-url origin "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/setiajiep/OfficeCLI.git" 2>/dev/null || true
+    echo "✅ GitHub credentials configured"
+fi
+
 echo ""
 echo "🎉 ================================================= 🎉"
 echo "✅ VPS SETUP & RESTORE COMPLETED SUCCESSFULLY!"
 echo "🏢 Office CLI, PDF Suite, Typst & pdfcpu installed!"
+echo "🐍 All Python libraries installed (pypdf, rembg, cv2, yt-dlp, dll)"
+echo "🔗 AGY AI binary configured for root"
 echo "⏰ Daily Backup Cron Job (00:00 WIB) is ACTIVE!"
 echo "🔗 GitHub Sync: https://github.com/setiajiep/OfficeCLI"
 echo "💡 Masukkan Token Telegram di /root/.env jika belum ada."
+echo "💡 Opsional: GITHUB_TOKEN=xxx GITHUB_USER=xxx bash setup.sh"
 echo "🎉 ================================================= 🎉"
