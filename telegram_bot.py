@@ -1,3 +1,14 @@
+# Auto Sync Gemini OAuth Token for Root
+import os, shutil
+def auto_sync_gemini_token():
+    src = "/home/ubuntu/.gemini/antigravity-cli/antigravity-oauth-token"
+    dst = "/root/.gemini/antigravity-cli/antigravity-oauth-token"
+    if os.path.exists(src):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(src, dst)
+        os.chmod(dst, 0o600)
+
+auto_sync_gemini_token()
 import os
 import sys
 import json

@@ -207,6 +207,20 @@ fi
 
 echo ""
 echo "🎉 ================================================= 🎉"
+
+# Setup AGY Token Auto-Sync & Binary for Root
+echo "🔗 Setting up AGY for root..."
+mkdir -p /root/.local/bin /root/.gemini/antigravity-cli
+if [ -f "/home/ubuntu/.gemini/antigravity-cli/antigravity-oauth-token" ]; then
+    cp /home/ubuntu/.gemini/antigravity-cli/antigravity-oauth-token /root/.gemini/antigravity-cli/
+    chmod 600 /root/.gemini/antigravity-cli/antigravity-oauth-token
+    echo "✅ AGY OAuth token copied to root"
+fi
+if [ -f "/home/ubuntu/.local/bin/agy" ]; then
+    ln -sf /home/ubuntu/.local/bin/agy /root/.local/bin/agy
+    echo "✅ AGY binary symlink created for root"
+fi
+
 echo "✅ VPS SETUP & RESTORE COMPLETED SUCCESSFULLY!"
 echo "🏢 Office CLI, PDF Suite, Typst & pdfcpu installed!"
 echo "🐍 All Python libraries installed (pypdf, rembg, cv2, yt-dlp, dll)"
