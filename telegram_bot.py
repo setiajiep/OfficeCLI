@@ -11,6 +11,16 @@ import re
 from datetime import datetime
 import psutil
 import speech_recognition as sr
+try:
+    from extra_features import (
+        generate_qr_code, shorten_url, download_media, ping_host,
+        check_port, whois_ip, set_reminder, parse_reminder_duration,
+        smart_calc, count_words, base64_encode, base64_decode,
+        get_weather, check_bandwidth
+    )
+    EXTRA_FEATURES = True
+except ImportError:
+    EXTRA_FEATURES = False
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -2378,7 +2388,136 @@ def process_update(update):
         send_message(chat_id, "💬 *MODE SESI LANJUT AKTIF!*\n━━━━━━━━━━━━━━━━━━━━━\nPerintah baru akan otomatis menyambung memori dan percakapan sebelumnya.\n\n💡 *Tip*: Ketik /new untuk mulai sesi baru.", parse_mode="Markdown")
         return
 
-    # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
+
+    # ================================================================
+    # FITUR CANGGIH TAMBAHAN (extra_features.py)
+    # ================================================================
+    if EXTRA_FEATURES:
+
+        # /qr <teks> - Generate QR Code
+        if text.startswith("/qr "):
+            qr_text = text[4:].strip()
+            send_message(chat_id, "⏳ Generating QR Code...")
+            qr_path = generate_qr_code(qr_text)
+            if qr_path:
+                send_photo(chat_id, qr_path, caption=f"📲 QR Code untuk: {qr_text[:50]}")
+            else:
+                send_message(chat_id, "❌ Gagal generate QR Code.")
+            return
+
+        # /short <url> - Shorten URL
+        if text.startswith("/short "):
+            url_to_short = text[7:].strip()
+            result = shorten_url(url_to_short)
+            send_message(chat_id, f"🔗 *URL Dipersingkat:*\n`{result}`", parse_mode="Markdown")
+            return
+
+        # /ytdl <url> atau /yt <url> - Download YouTube video
+        if text.startswith("/ytdl ") or text.startswith("/yt "):
+            dl_url = text.split(" ", 1)[1].strip()
+            send_message(chat_id, "⏳ Mengunduh video... Mohon tunggu!")
+            fpath, err = download_media(dl_url, audio_only=False)
+            if fpath and os.path.exists(fpath):
+                send_video(chat_id, fpath, caption=f"🎬 Video: {os.path.basename(fpath)}")
+            else:
+                send_message(chat_id, f"❌ Gagal download video:\n{err}")
+            return
+
+        # /mp3 <url> - Download audio MP3
+        if text.startswith("/mp3 "):
+            dl_url = text[5:].strip()
+            send_message(chat_id, "⏳ Mengunduh audio MP3... Mohon tunggu!")
+            fpath, err = download_media(dl_url, audio_only=True)
+            if fpath and os.path.exists(fpath):
+                send_audio(chat_id, fpath, caption=f"🎵 Audio: {os.path.basename(fpath)}")
+            else:
+                send_message(chat_id, f"❌ Gagal download audio:\n{err}")
+            return
+
+        # /ping <host> - Ping host
+        if text.startswith("/ping "):
+            host = text[6:].strip().split()[0]
+            result = ping_host(host)
+            send_message(chat_id, result, parse_mode="Markdown")
+            return
+
+        # /port <host> <port> - Cek port
+        if text.startswith("/port "):
+            parts = text[6:].strip().split()
+            if len(parts) >= 2:
+                result = check_port(parts[0], parts[1])
+                send_message(chat_id, result, parse_mode="Markdown")
+            else:
+                send_message(chat_id, "ℹ️ Format: /port <host> <port>\nContoh: /port google.com 443")
+            return
+
+        # /ip <host/ip> - Whois/IP info
+        if text.startswith("/ip "):
+            target = text[4:].strip()
+            result = whois_ip(target)
+            send_message(chat_id, result, parse_mode="Markdown")
+            return
+
+        # /remind <durasi> <pesan> - Set reminder
+        if text.startswith("/remind ") or text.startswith("/alarm "):
+            parts = text.split(" ", 2)
+            if len(parts) >= 3:
+                dur_str = parts[1]
+                msg = parts[2]
+                secs = parse_reminder_duration(dur_str)
+                if secs:
+                    result = set_reminder(chat_id, send_message, secs, msg)
+                    send_message(chat_id, result, parse_mode="Markdown")
+                else:
+                    send_message(chat_id, "ℹ️ Format: /remind <durasi> <pesan>\nContoh: /remind 5m Minum air putih\nSatuan: s=detik, m=menit, h=jam")
+            else:
+                send_message(chat_id, "ℹ️ Format: /remind <durasi> <pesan>\nContoh: /remind 30m Istirahat dulu!")
+            return
+
+        # /calc <ekspresi> - Kalkulator
+        if text.startswith("/calc ") or text.startswith("="):
+            expr = text[6:].strip() if text.startswith("/calc ") else text[1:].strip()
+            result = smart_calc(expr)
+            send_message(chat_id, result, parse_mode="Markdown")
+            return
+
+        # /wc <teks> - Word count
+        if text.startswith("/wc "):
+            wc_text = text[4:].strip()
+            result = count_words(wc_text)
+            send_message(chat_id, result, parse_mode="Markdown")
+            return
+
+        # /b64 <teks> - Base64 encode
+        if text.startswith("/b64 "):
+            b64_text = text[5:].strip()
+            result = base64_encode(b64_text)
+            send_message(chat_id, f"🔐 *Base64:*\n`{result}`", parse_mode="Markdown")
+            return
+
+        # /b64d <teks> - Base64 decode
+        if text.startswith("/b64d "):
+            b64_text = text[6:].strip()
+            result = base64_decode(b64_text)
+            send_message(chat_id, f"🔓 *Decoded:*\n`{result}`", parse_mode="Markdown")
+            return
+
+        # /cuaca <kota> atau /weather <kota>
+        if text.startswith("/cuaca ") or text.startswith("/weather "):
+            city = text.split(" ", 1)[1].strip()
+            result = get_weather(city)
+            send_message(chat_id, result, parse_mode="Markdown")
+            return
+
+        # /bandwidth atau /speedtest
+        if text in ["/bandwidth", "/speedtest", "/bw"]:
+            send_message(chat_id, "⏳ Testing bandwidth VPS...")
+            result = check_bandwidth()
+            send_message(chat_id, result, parse_mode="Markdown")
+            return
+
+    # ================================================================
+        # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
     session_mode = get_session_mode(user_id)
     status_text = format_processing_status(text, current_cwd, session_mode)
     res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
