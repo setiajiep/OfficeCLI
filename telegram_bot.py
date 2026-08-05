@@ -290,6 +290,60 @@ def set_user_session_id(user_id, session_id):
     STATE["session_modes"][str_id] = session_id
     save_state(STATE)
 
+AVAILABLE_MODELS = [
+    {"id": "default", "name": "Default (Standard AGY Model)", "icon": "⚙️"},
+    {"id": "gemini-3.6-flash-high", "name": "Gemini 3.6 Flash (High)", "icon": "⚡"},
+    {"id": "gemini-3.6-flash-medium", "name": "Gemini 3.6 Flash (Medium)", "icon": "⚡"},
+    {"id": "gemini-3.6-flash-low", "name": "Gemini 3.6 Flash (Low)", "icon": "⚡"},
+    {"id": "gemini-3.5-flash-high", "name": "Gemini 3.5 Flash (High)", "icon": "🚀"},
+    {"id": "gemini-3.5-flash-medium", "name": "Gemini 3.5 Flash (Medium)", "icon": "🚀"},
+    {"id": "gemini-3.5-flash-low", "name": "Gemini 3.5 Flash (Low)", "icon": "🚀"},
+    {"id": "gemini-3.1-pro-high", "name": "Gemini 3.1 Pro (High)", "icon": "🧠"},
+    {"id": "gemini-3.1-pro-low", "name": "Gemini 3.1 Pro (Low)", "icon": "🧠"},
+    {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6 (Thinking)", "icon": "🔮"},
+    {"id": "claude-opus-4-6-thinking", "name": "Claude Opus 4.6 (Thinking)", "icon": "👑"},
+    {"id": "gpt-oss-120b-medium", "name": "GPT-OSS 120B (Medium)", "icon": "💡"},
+]
+
+def get_user_model(user_id):
+    str_id = str(user_id) if user_id else "default"
+    return STATE.get("models", {}).get(str_id, "default")
+
+def set_user_model(user_id, model_id):
+    str_id = str(user_id)
+    if "models" not in STATE:
+        STATE["models"] = {}
+    STATE["models"][str_id] = model_id
+    save_state(STATE)
+
+def get_model_display_name(model_id):
+    for m in AVAILABLE_MODELS:
+        if m["id"] == model_id:
+            return f"{m['icon']} {m['name']}"
+    return f"⚙️ {model_id}"
+
+def render_model_picker(user_id):
+    current_model = get_user_model(user_id)
+    current_display = get_model_display_name(current_model)
+
+    text = (
+        "🤖 *PILIH MODEL AI ANTIGRAVITY (AGY)*\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🎯 *Model Aktif Saat Ini:* `{current_display}`\n\n"
+        "Pilih model AI di bawah ini untuk digunakan pada setiap instruksi AGY AI:"
+    )
+
+    btns = []
+    for m in AVAILABLE_MODELS:
+        is_selected = (m["id"] == current_model)
+        prefix = "🟢 " if is_selected else "⚪ "
+        btn_label = f"{prefix}{m['name']}"
+        btns.append([{"text": btn_label, "callback_data": f"set_model:{m['id']}"}])
+
+    reply_markup = {"inline_keyboard": btns}
+    return text, reply_markup
+
+
 def clean_transcript_text(text):
     if not text:
         return ""
@@ -917,11 +971,14 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
 
-def format_processing_status(prompt, current_cwd, session_mode):
-    return "⏳ <b>Step 1: Memproses perintah AGY AI...</b>"
+def format_processing_status(prompt, current_cwd, session_mode, model_id="default"):
+    model_disp = get_model_display_name(model_id)
+    return f"⏳ <b>Step 1: Memproses perintah AGY AI ({model_disp})...</b>"
 
-def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="continue"):
+def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="continue", user_id=None):
     start_time = time.time()
+    model_id = get_user_model(user_id) if user_id else "default"
+    model_disp = get_model_display_name(model_id)
     try:
         before_files = {}
         if os.path.exists(work_dir):
@@ -936,12 +993,15 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
             except Exception:
                 pass
 
-        edit_message(chat_id, status_msg_id, "🔄 <b>Step 2: Menganalisis & mengeksekusi tugas...</b>", parse_mode="HTML")
+        edit_message(chat_id, status_msg_id, f"🔄 <b>Step 2: Menganalisis & mengeksekusi ({model_disp})...</b>", parse_mode="HTML")
 
         cmd = [
             AGY_BIN,
             "--add-dir", work_dir
         ]
+        if model_id and model_id != "default":
+            cmd.extend(["--model", model_id])
+
         if session_mode == "continue":
             cmd.append("--continue")
         elif session_mode and session_mode != "new":
@@ -967,7 +1027,8 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
         clean_out = format_telegram_html(output)
         
         full_output = (
-            f"⚡ <b>ANTIGRAVITY AI RESPONSE</b> (⏱️ {elapsed}s)\n"
+            f"⚡ <b>ANTIGRAVITY AI RESPONSE</b> (⏱️ {elapsed}s | 🤖 {model_disp})\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"{clean_out}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━\n"
@@ -1102,9 +1163,25 @@ def process_callback_query(cq):
         send_message(chat_id, "🤖 *ANTIGRAVITY AI (AGY)*\n━━━━━━━━━━━━━━━━━━━━━\nKetik pesan/instruksi atau kirim Voice Note kapan saja untuk diproses oleh AGY AI!", parse_mode="Markdown")
         return
 
+    if data == "menu_select_model":
+        answer_callback_query(cq_id, "🤖 Membuka pilihan model AI...")
+        msg_text, reply_markup = render_model_picker(user_id)
+        edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
+        return
+
+    if data.startswith("set_model:"):
+        model_id = data.split("set_model:", 1)[1]
+        set_user_model(user_id, model_id)
+        disp_name = get_model_display_name(model_id)
+        answer_callback_query(cq_id, f"✅ Model diubah: {disp_name}", show_alert=True)
+        msg_text, reply_markup = render_model_picker(user_id)
+        edit_message(chat_id, message_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
+        return
+
     if data == "menu_sys_status":
         answer_callback_query(cq_id, "📊 Loading status...")
         st = get_system_status()
+        model_disp = get_model_display_name(get_user_model(user_id))
         status_text = (
             "📊 *REAL-TIME VPS SYSTEM DASHBOARD*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
@@ -1114,7 +1191,8 @@ def process_callback_query(cq):
             f"💾 *Disk Free:* `{st.get('disk_free_gb', 0):.2f} GB / {st.get('disk_total_gb', 0):.2f} GB ({st.get('disk_percent', 0):.1f}% used)`\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "🤖 *Bot Service:* Running & Active\n"
-            "⚡ *AI Engine:* Antigravity CLI Active"
+            f"⚡ *AI Engine:* Antigravity CLI\n"
+            f"🤖 *Active Model:* `{model_disp}`"
         )
         send_message(chat_id, status_text, parse_mode="Markdown")
         return
@@ -1601,7 +1679,7 @@ def process_callback_query(cq):
                 res_msg = send_message(chat_id, f"🤖 Antigravity menganalisa & meringkas `{file_name}`...")
                 if res_msg and len(res_msg) > 0:
                     status_msg_id = res_msg[0]["message_id"]
-                    t = threading.Thread(target=execute_antigravity, args=(prompt, chat_id, status_msg_id, current_cwd))
+                    t = threading.Thread(target=execute_antigravity, args=(prompt, chat_id, status_msg_id, current_cwd, "continue", user_id))
                     t.start()
             except Exception as e:
                 send_message(chat_id, f"❌ Gagal AI Summary: {e}")
@@ -1757,6 +1835,7 @@ def process_callback_query(cq):
 def setup_bot_commands():
     commands = [
         {"command": "start", "description": "🚀 Dashboard & Menu Utama AGY"},
+        {"command": "model", "description": "🤖 Pilih Model AI (Gemini, Claude, GPT)"},
         {"command": "menu", "description": "📱 Tampilkan Tombol Menu Keyboard"},
         {"command": "sessions", "description": "📜 Pilih & Riwayat Sesi Percakapan"},
         {"command": "continue", "description": "💬 Aktifkan Mode Sesi Lanjut"},
@@ -1791,17 +1870,18 @@ def setup_bot_commands():
 def get_main_menu_keyboard():
     return {
         "keyboard": [
-            [{"text": "🤖 Tanya AGY AI"}, {"text": "📂 File Manager"}],
-            [{"text": "📜 Pilih Sesi"}, {"text": "💬 Sesi Lanjut / Baru"}],
-            [{"text": "📊 Status VPS"}, {"text": "📈 Chart VPS"}],
-            [{"text": "⚡ Top Processes"}, {"text": "🛠️ Services"}],
-            [{"text": "💻 Exec Bash"}, {"text": "📦 Backup VPS"}],
-            [{"text": "🌐 Web Reader"}, {"text": "🌤️ Cuaca"}],
-            [{"text": "📲 QR Code"}, {"text": "🔗 Short URL"}],
-            [{"text": "🎬 Unduh Video"}, {"text": "🎵 Unduh MP3"}],
-            [{"text": "📡 Ping"}, {"text": "🌍 IP Info"}],
-            [{"text": "🧮 Kalkulator"}, {"text": "🚀 Bandwidth"}],
-            [{"text": "❓ Bantuan"}, {"text": "🙈 Sembunyikan Menu"}]
+            [{"text": "🤖 Tanya AGY AI"}, {"text": "🤖 Pilih Model AI"}],
+            [{"text": "📂 File Manager"}, {"text": "📜 Pilih Sesi"}],
+            [{"text": "💬 Sesi Lanjut / Baru"}, {"text": "📊 Status VPS"}],
+            [{"text": "📈 Chart VPS"}, {"text": "⚡ Top Processes"}],
+            [{"text": "🛠️ Services"}, {"text": "💻 Exec Bash"}],
+            [{"text": "📦 Backup VPS"}, {"text": "🌐 Web Reader"}],
+            [{"text": "🌤️ Cuaca"}, {"text": "📲 QR Code"}],
+            [{"text": "🔗 Short URL"}, {"text": "🎬 Unduh Video"}],
+            [{"text": "🎵 Unduh MP3"}, {"text": "📡 Ping"}],
+            [{"text": "🌍 IP Info"}, {"text": "🧮 Kalkulator"}],
+            [{"text": "🚀 Bandwidth"}, {"text": "❓ Bantuan"}],
+            [{"text": "🙈 Sembunyikan Menu"}]
         ],
         "resize_keyboard": True,
         "is_persistent": True
@@ -2057,7 +2137,7 @@ def process_update(update):
                     res_msg = send_message(chat_id, f"🎙️ *PERINTAH SUARA TERDETEKSI:*\n`\"{voice_text}\"`\n\n🤖 Antigravity AI mengeksekusi instruksi...", parse_mode="Markdown")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
-                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd))
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, "continue", user_id))
                         t.start()
                 else:
                     send_message(chat_id, "⚠️ Gagal mengonversi pesan suara menjadi teks.")
@@ -2086,11 +2166,11 @@ def process_update(update):
                 if caption_text:
                     session_mode = get_session_mode(user_id)
                     full_prompt = f"Gambar '{img_filename}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan olah/edit gambar ini sesuai instruksi."
-                    status_text = format_processing_status(full_prompt, current_cwd, session_mode)
+                    status_text = format_processing_status(full_prompt, current_cwd, session_mode, get_user_model(user_id))
                     res_msg = send_message(chat_id, status_text, parse_mode="HTML")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
-                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode))
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode, user_id))
                         t.start()
                     return
 
@@ -2144,11 +2224,11 @@ def process_update(update):
                 if caption_text:
                     session_mode = get_session_mode(user_id)
                     full_prompt = f"File '{file_name}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan edit, analisis, atau proses file '{file_name}' sesuai instruksi tersebut."
-                    status_text = format_processing_status(full_prompt, current_cwd, session_mode)
+                    status_text = format_processing_status(full_prompt, current_cwd, session_mode, get_user_model(user_id))
                     res_msg = send_message(chat_id, status_text, parse_mode="HTML")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
-                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode))
+                        t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode, user_id))
                         t.start()
                     return
 
@@ -2199,18 +2279,24 @@ def process_update(update):
 
     text = message["text"].strip()
 
+    if text in ["/model", "/models", "/selectmodel", "🤖 Pilih Model AI"]:
+        msg_text, reply_markup = render_model_picker(user_id)
+        send_message(chat_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
+        return
+
     if text in ["/start", "/menu", "📱 Tombol Menu"]:
         st = get_system_status()
         disk_free = st.get('disk_free_gb', 0)
         ram_used = st.get('mem_used_mb', 0)
         ram_pct = st.get('mem_percent', 0)
+        active_model_name = get_model_display_name(get_user_model(user_id))
         
         menu_text = (
             "🤖 *GOOGLE ANTIGRAVITY (AGY) AI DASHBOARD*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "🟢 *System Status:* `Online & Operational`\n"
             f"🧠 *RAM Used:* `{ram_used:.1f} MB ({ram_pct:.1f}%)` | 💾 *Free Disk:* `{disk_free:.1f} GB`\n"
-            "⚡ *AI Engine:* `Google Antigravity (agy v1.1.9)`\n"
+            f"⚡ *AI Engine:* `Google Antigravity` | 🤖 *Model:* `{active_model_name}`\n"
             f"📍 *Current Path:* `{current_cwd}`\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
             "📱 *PILIH MENU CEPAT:* Tap tombol keyboard di bawah atau langsung kirim pesan ke bot!\n\n"
@@ -2220,9 +2306,10 @@ def process_update(update):
             "• *Perintah Bash* -> Gunakan `/exec <command>` untuk jalankan bash command."
         )
         inline_dash = {"inline_keyboard": [
-            [{"text": "🤖 Tanya AGY AI", "callback_data": "menu_ask_agy"}, {"text": "📂 Buka File Manager", "callback_data": "fm_cd:L3Jvb3Q=:1"}],
-            [{"text": "📊 Status System VPS", "callback_data": "menu_sys_status"}, {"text": "⚡ Process Top", "callback_data": "fm_action:view_procs"}],
-            [{"text": "📦 Backup VPS", "callback_data": "menu_backup"}, {"text": "❓ Panduan & Bantuan", "callback_data": "menu_help"}]
+            [{"text": "🤖 Tanya AGY AI", "callback_data": "menu_ask_agy"}, {"text": "🤖 Pilih Model AI", "callback_data": "menu_select_model"}],
+            [{"text": "📂 Buka File Manager", "callback_data": "fm_cd:L3Jvb3Q=:1"}, {"text": "📊 Status VPS", "callback_data": "menu_sys_status"}],
+            [{"text": "⚡ Process Top", "callback_data": "fm_action:view_procs"}, {"text": "📦 Backup VPS", "callback_data": "menu_backup"}],
+            [{"text": "❓ Panduan & Bantuan", "callback_data": "menu_help"}]
         ]}
         send_message(chat_id, menu_text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
         send_message(chat_id, "⚡ *MENU PINTASAN AKSI INLINE:*", reply_markup=inline_dash, parse_mode="Markdown")
@@ -2714,11 +2801,11 @@ def process_update(update):
     # ================================================================
         # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
     session_mode = get_session_mode(user_id)
-    status_text = format_processing_status(text, current_cwd, session_mode)
+    status_text = format_processing_status(text, current_cwd, session_mode, get_user_model(user_id))
     res_msg = send_message(chat_id, status_text, parse_mode="HTML")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
-        t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, session_mode))
+        t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, session_mode, user_id))
         t.start()
 
 def main():

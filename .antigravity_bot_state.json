@@ -2,12 +2,15 @@
   "owner_id": 508687457,
   "owner_username": "Setiaji_Eka_Putra",
   "cwds": {
-    "508687457": "/root"
+    "508687457": "/root/MyProject/PROYEK APLIKASI"
   },
   "show_hidden": {
     "508687457": false
   },
   "session_modes": {
-    "508687457": "43838a4f-a291-4f63-bfec-b013551e1c20"
+    "508687457": "continue"
+  },
+  "models": {
+    "508687457": "gemini-3.6-flash-medium"
   }
 }
