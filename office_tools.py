@@ -24,7 +24,8 @@ def convert_to_pdf(input_path, output_dir=None):
         return None
     
     if os.path.isdir(input_path):
-        out_pdf = os.path.join(output_dir, f"{os.path.basename(input_path.rstrip('/\\\\'))}.pdf") if output_dir else None
+        clean_path_name = os.path.basename(input_path.rstrip('/\\'))
+        out_pdf = os.path.join(output_dir, f"{clean_path_name}.pdf") if output_dir else None
         return folder_to_pdf(input_path, output_path=out_pdf)
         
     if output_dir is None:

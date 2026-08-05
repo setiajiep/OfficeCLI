@@ -99,3 +99,4 @@ fi
 #fi
 alias agy="agy --dangerously-skip-permissions"
 [ -f ~/.env ] && export $(cat ~/.env | xargs)
+

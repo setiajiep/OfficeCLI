@@ -508,7 +508,8 @@ def batch_process_images(folder_path, action="compress", output_dir=None, **kwar
     action_clean = action.lstrip('.').lower()
     if action_clean in ["pdf", "to_pdf", "convert_pdf"]:
         from office_tools import folder_to_pdf
-        pdf_out = os.path.join(output_dir, f"{os.path.basename(folder_path.rstrip('/\\'))}.pdf") if output_dir else None
+        clean_folder_name = os.path.basename(folder_path.rstrip('/\\'))
+        pdf_out = os.path.join(output_dir, f"{clean_folder_name}.pdf") if output_dir else None
         res = folder_to_pdf(folder_path, output_path=pdf_out)
         return [res] if res else []
 

@@ -14,6 +14,9 @@ import sys
 import json
 import time
 import shutil
+import fcntl
+import html
+import uuid
 import urllib.request
 import urllib.parse
 import subprocess
@@ -146,15 +149,71 @@ def decode_path(key):
 encode_path("/root")
 encode_path("/root/MyProject")
 
-def clean_ai_output(text):
+def clean_ansi(text):
     if not text:
         return ""
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
-    text = re.sub(r'\*(.*?)\*', r'\1', text)
-    text = re.sub(r'`(.*?)`', r'\1', text)
-    text = re.sub(r'^#{1,6}\s*(.*)$', r'📌 \1', text, flags=re.MULTILINE)
-    text = re.sub(r'^\s*[\*\-]\s+', '• ', text, flags=re.MULTILINE)
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
+
+def format_telegram_html(text):
+    if not text:
+        return ""
+    text = clean_ansi(text).strip()
+    
+    placeholders = {}
+
+    def add_placeholder(html_content):
+        key = f"TOKEN{uuid.uuid4().hex[:12].upper()}TOKEN"
+        placeholders[key] = html_content
+        return key
+
+    # Preserve code blocks
+    def save_code_block(match):
+        lang = match.group(1) or ""
+        code_content = match.group(2).strip()
+        escaped_code = html.escape(code_content)
+        return add_placeholder(f"<pre><code>{escaped_code}</code></pre>")
+
+    text = re.sub(r'```(\w*)\n?(.*?)```', save_code_block, text, flags=re.DOTALL)
+
+    # Preserve inline code
+    def save_inline_code(match):
+        code_content = match.group(1)
+        escaped_code = html.escape(code_content)
+        return add_placeholder(f"<code>{escaped_code}</code>")
+
+    text = re.sub(r'`([^`]+)`', save_inline_code, text)
+
+    # Bullet lists: - or * -> • (Must be done before asterisk bold/italic formatting)
+    text = re.sub(r'^\s*[\*\-]\s+', r'• ', text, flags=re.MULTILINE)
+    text = re.sub(r'^\s*(\d+)\.\s+', r'\1. ', text, flags=re.MULTILINE)
+
+    # Escape HTML special chars for normal text
+    text = html.escape(text)
+
+    # Headers: # Header -> 📌 <b>Header</b>
+    text = re.sub(r'^#{1,6}\s*(.*)$', r'📌 <b>\1</b>', text, flags=re.MULTILINE)
+
+    # Bold: **bold**
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+
+    # Single asterisk bold/italic on single line: *bold*
+    text = re.sub(r'(?<!\w)\*([^\*\n]+?)\*(?!\w)', r'<b>\1</b>', text)
+
+    # Italic: _italic_
+    text = re.sub(r'(?<!\w)_([^_\n]+?)_(?!\w)', r'<i>\1</i>', text)
+
+    # Restore placeholders
+    for key, val in placeholders.items():
+        text = text.replace(key, val)
+
+    # Clean up redundant newlines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
     return text.strip()
+
+def clean_ai_output(text):
+    return format_telegram_html(text)
 
 def load_state():
     if os.path.exists(STATE_FILE):
@@ -165,9 +224,17 @@ def load_state():
             pass
     return {"owner_id": None, "owner_username": None, "cwds": {}, "show_hidden": {}}
 
+STATE_LOCK = threading.Lock()
+
 def save_state(state):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2)
+    with STATE_LOCK:
+        try:
+            tmp_file = STATE_FILE + ".tmp"
+            with open(tmp_file, "w") as f:
+                json.dump(state, f, indent=2)
+            os.replace(tmp_file, STATE_FILE)
+        except Exception as e:
+            print(f"Error saving state: {e}", file=sys.stderr)
 
 STATE = load_state()
 
@@ -375,11 +442,19 @@ def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode=None):
     
     res = api_request("editMessageText", payload)
     
-    if not res or not res.get("ok"):
+    if res and not res.get("ok"):
+        desc = res.get("description", "").lower()
+        if "message is not modified" in desc:
+            return res
         payload.pop("parse_mode", None)
         res = api_request("editMessageText", payload)
 
-    if not res or not res.get("ok"):
+    if res and not res.get("ok"):
+        desc = res.get("description", "").lower()
+        if "message is not modified" in desc:
+            return res
+        return send_message(chat_id, text, reply_markup=reply_markup)
+    elif not res:
         return send_message(chat_id, text, reply_markup=reply_markup)
     return res
 
@@ -843,7 +918,7 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
     return text, reply_markup
 
 def format_processing_status(prompt, current_cwd, session_mode):
-    return "⏳ *Step 1: Memproses perintah...*"
+    return "⏳ <b>Step 1: Memproses perintah AGY AI...</b>"
 
 def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="continue"):
     start_time = time.time()
@@ -861,7 +936,7 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
             except Exception:
                 pass
 
-        edit_message(chat_id, status_msg_id, "🔄 *Step 2: Menganalisis & mengeksekusi tugas...*", parse_mode="Markdown")
+        edit_message(chat_id, status_msg_id, "🔄 <b>Step 2: Menganalisis & mengeksekusi tugas...</b>", parse_mode="HTML")
 
         cmd = [
             AGY_BIN,
@@ -887,11 +962,19 @@ def execute_antigravity(prompt, chat_id, status_msg_id, work_dir, session_mode="
         
         output, _ = process.communicate(timeout=300)
         output = output.strip() if output else "Perintah selesai dijalankan."
+        elapsed = round(time.time() - start_time, 1)
 
-        clean_out = clean_ai_output(output)
-        full_output = f"✅ *Finish.*\n━━━━━━━━━━━━━━━━━━━━━\n\n{clean_out}"
+        clean_out = format_telegram_html(output)
         
-        edit_message(chat_id, status_msg_id, full_output, parse_mode="Markdown")
+        full_output = (
+            f"⚡ <b>ANTIGRAVITY AI RESPONSE</b> (⏱️ {elapsed}s)\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{clean_out}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📍 <i>Path: {work_dir}</i>"
+        )
+        
+        edit_message(chat_id, status_msg_id, full_output, parse_mode="HTML")
 
         sent_files = set()
         new_pdf_files = []
@@ -2004,7 +2087,7 @@ def process_update(update):
                     session_mode = get_session_mode(user_id)
                     full_prompt = f"Gambar '{img_filename}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan olah/edit gambar ini sesuai instruksi."
                     status_text = format_processing_status(full_prompt, current_cwd, session_mode)
-                    res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
+                    res_msg = send_message(chat_id, status_text, parse_mode="HTML")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
                         t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode))
@@ -2062,7 +2145,7 @@ def process_update(update):
                     session_mode = get_session_mode(user_id)
                     full_prompt = f"File '{file_name}' telah diupload ke direktori '{current_cwd}'. Instruksi pengguna: {caption_text}. Silakan edit, analisis, atau proses file '{file_name}' sesuai instruksi tersebut."
                     status_text = format_processing_status(full_prompt, current_cwd, session_mode)
-                    res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
+                    res_msg = send_message(chat_id, status_text, parse_mode="HTML")
                     if res_msg and len(res_msg) > 0:
                         status_msg_id = res_msg[0]["message_id"]
                         t = threading.Thread(target=execute_antigravity, args=(full_prompt, chat_id, status_msg_id, current_cwd, session_mode))
@@ -2632,13 +2715,24 @@ def process_update(update):
         # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
     session_mode = get_session_mode(user_id)
     status_text = format_processing_status(text, current_cwd, session_mode)
-    res_msg = send_message(chat_id, status_text, parse_mode="Markdown")
+    res_msg = send_message(chat_id, status_text, parse_mode="HTML")
     if res_msg and len(res_msg) > 0:
         status_msg_id = res_msg[0]["message_id"]
         t = threading.Thread(target=execute_antigravity, args=(text, chat_id, status_msg_id, current_cwd, session_mode))
         t.start()
 
 def main():
+    lock_file_path = "/tmp/telegram_bot.lock"
+    try:
+        global _instance_lock_file
+        _instance_lock_file = open(lock_file_path, "w")
+        fcntl.flock(_instance_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _instance_lock_file.write(str(os.getpid()))
+        _instance_lock_file.flush()
+    except IOError:
+        print("❌ Error: Process Telegram Bot lain sedang berjalan! Menghentikan proses kedua.", file=sys.stderr)
+        sys.exit(1)
+
     print("🚀 Antigravity Telegram Office & Photo Editor Active...")
     print("Bot Username: @Kontrolagybot")
 
@@ -2658,6 +2752,8 @@ def main():
                 for update in updates.get("result", []):
                     offset = update["update_id"] + 1
                     process_update(update)
+            else:
+                time.sleep(1)
         except Exception as e:
             print(f"Polling loop error: {e}", file=sys.stderr)
             time.sleep(3)

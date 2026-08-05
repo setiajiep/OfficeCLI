@@ -230,3 +230,5 @@ echo "🔗 GitHub Sync: https://github.com/setiajiep/OfficeCLI"
 echo "💡 Masukkan Token Telegram di /root/.env jika belum ada."
 echo "💡 Opsional: GITHUB_TOKEN=xxx GITHUB_USER=xxx bash setup.sh"
 echo "🎉 ================================================= 🎉"
+
+ln -sf /home/ubuntu/.local/bin/agy /usr/local/bin/agy 2>/dev/null || true
