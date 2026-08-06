@@ -1,0 +1,122 @@
+Max row: 141
+Row   1: {1: 'REKAP PAYMENT'}
+Row   2: {1: 'No', 2: 'Tanggal', 4: 'Keterangan', 7: 'Jumlah'}
+Row   3: {1: 1, 2: '465', 3: 'Ongkos Angkut AMP LPG/25 - 28 Nov 2025', 7: 38750000}
+Row   4: {3: 'PPh 23 ', 5: '08002500392404532', 6: '01/12/2025', 7: -775000}
+Row   5: {3: 'SUSUT AMP/413 L', 7: -6256950}
+Row   6: {1: 2, 2: '468', 3: 'Ongkos Angkut AMP LPG/28-29 Nov 2025', 7: 15500000}
+Row   7: {3: 'PPh 23 ', 5: '08002500394740386', 6: '02/12/2025', 7: -310000}
+Row   8: {3: 'SUSUT AMP/251 L', 7: -3802650}
+Row   9: {1: 3, 2: '471', 3: 'Ongkos Angkut AMP LPG/29 Nov - 5 DES 2025', 7: 54250000}
+Row  10: {3: 'PPh 23 ', 5: '08002500402315913', 6: '08/12/2025', 7: -1085000}
+Row  11: {3: 'SUSUT AMP/88 L', 7: -1333200}
+Row  12: {3: 'SUSUT AMP/595 L', 7: -8954750}
+Row  13: {1: 4, 2: '477', 3: 'Ongkos Angkut AMP LPG/07 DES 2025', 7: 31000000}
+Row  14: {3: 'PPh 23 ', 5: '08002500408049127', 6: '10/12/2025', 7: -620000}
+Row  15: {3: 'SUSUT AMP/449 L', 7: -6757450}
+Row  19: {6: 'TOTAL', 7: 109605000}
+Row  21: {1: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row  22: {1: 'Mohon Transfer ke:'}
+Row  23: {1: 'BRI'}
+Row  24: {1: 'NO Rek:', 2: '013001002256309'}
+Row  25: {1: 'a/n ', 2: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row  26: {1: 'Bayar tgl : 12 Januari 2026'}
+Row  31: {1: 'No', 2: 'Tanggal', 4: 'Keterangan', 7: 'Jumlah', 9: 'No', 10: 'Tanggal', 12: 'Keterangan', 15: 'Jumlah', 17: 'No', 18: 'Tanggal', 20: 'Keterangan', 23: 'Jumlah', 25: 'No', 26: 'Tanggal', 28: 'Keterangan', 31: 'Jumlah'}
+Row  32: {1: 1, 2: '479', 3: 'Ongkos Angkut AMP LPG/05 - 09 Des 2025', 7: 46500000, 9: 1, 10: '008', 11: 'Ongkos Angkut AMP LPG/31 Des 2025', 15: 31000000, 17: 1, 18: '017', 19: 'Ongkos Angkut AMP LPG/14 Jan 2026', 23: 7750000, 25: 1, 26: '024', 27: 'Ongkos Angkut AMP/WMK LPG/27-28 JAN 2026', 31: 48750000}
+Row  33: {3: 'PPh 23 ', 5: '08002500410919941', 6: '12/12/2025', 7: -930000, 11: 'PPh 23 ', 13: '08002600002426461', 14: '08/01/2026', 15: -620000, 19: 'PPh 23 ', 21: '08002600010640907', 22: '20/01/2026', 23: -155000, 27: 'PPh 23 ', 29: '08002600028146557', 30: '03/02/2026', 31: -975000}
+Row  34: {3: 'SUSUT AMP/251 L', 7: -3777550, 11: 'SUSUT AMP/290 L', 15: -4364500, 18: '019', 19: 'Ongkos Angkut AMP LPG/14-25 Jan 2026', 23: 147250000, 27: 'SUSUT AMP/534 L', 31: -7876500}
+Row  35: {1: 2, 2: '482', 3: 'Ongkos Angkut AMP LPG/11 Des 2025', 7: 31000000, 9: 2, 10: '010', 11: 'Ongkos Angkut AMP LPG/07 Jan 2026', 15: 62000000, 17: 2, 19: 'PPh 23 ', 21: '08002600017906275', 22: '27/01/2026', 23: -2945000, 27: 'SUSUT WMK/211 L', 31: -2996200}
+Row  36: {3: 'PPh 23 ', 5: '08002500414558717', 6: '15/12/2025', 7: -620000, 11: 'PPh 23 ', 13: '08002600004545082', 14: '12/01/2026', 15: -1240000, 19: 'SUSUT AMP/1372 L', 23: -20237000, 25: 2, 26: '025', 27: 'Ongkos Angkut AMP LPG/30-31 JAN 2026', 31: 46500000}
+Row  37: {1: 3, 2: '488', 3: 'Ongkos Angkut AMP LPG/19 - 23 Des 2025', 7: 93000000, 11: 'SUSUT AMP/443 L', 15: -6534250, 27: 'PPh 23 ', 29: '08002600029419391', 30: '05/02/2026', 31: -930000}
+Row  38: {3: 'PPh 23 ', 5: '08002500433402050', 6: '27/12/2025', 7: -1860000, 9: 3, 10: '011', 11: 'Ongkos Angkut AMP LPG/09-12 Jan 2026', 15: 23250000, 17: 3, 27: 'SUSUT AMP/378 L', 31: -5575500}
+Row  39: {3: 'SUSUT AMP/901 L', 7: -13560050, 11: 'PPh 23 ', 13: '08012600007272543', 14: '15/01/2026', 15: -465000, 25: 3, 26: '026', 27: 'Ongkos Angkut AMP LPG/05 FEB 2026', 31: 23250000}
+Row  40: {1: 4, 2: '489', 3: 'Ongkos Angkut AMP LPG/23-28 Des 2025', 7: 38750000, 11: 'SUSUT AMP/199 L', 15: -2935250, 27: 'PPh 23 ', 29: '08002600032468239', 30: '09/02/2026', 31: -465000}
+Row  41: {3: 'PPh 23 ', 5: '08002500434158715', 6: '31/12/2025', 7: -775000, 27: 'SUSUT AMP/282 L', 31: -4272300}
+Row  42: {3: 'SUSUT AMP/525 L', 7: -7901250, 22: 'TOTAL', 23: 131663000, 25: 4}
+Row  43: {1: 5, 2: '005', 3: 'Ongkos Angkut AMP LPG/28 Des 2025', 7: 7750000, 14: 'TOTAL', 15: 100091000}
+Row  44: {3: 'PPh 23 ', 5: '08002600000229627', 6: '02/01/2026', 7: -155000, 17: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row  45: {3: 'SUSUT AMP/69 L', 7: -1038450, 9: 'Terlampir bukti-bukti pendukung pembayaran ini', 17: 'Mohon Transfer ke:', 30: 'TOTAL', 31: 95409500}
+Row  46: {1: 6, 2: '007', 3: 'Ongkos Angkut AMP LPG/31 Des 2025', 7: 15500000, 9: 'Mohon Transfer ke:', 17: 'BRI'}
+Row  47: {3: 'PPh 23 ', 5: '08002600000459721', 6: '05/01/2026', 7: -310000, 9: 'BRI', 17: 'NO Rek:', 18: '013001002256309', 25: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row  48: {9: 'NO Rek:', 10: '013001002256309', 17: 'a/n ', 18: 'PT. HIJAU SEJAHTERA BERSAMA', 25: 'Mohon Transfer ke:'}
+Row  49: {6: 'TOTAL', 7: 201572700, 9: 'a/n ', 10: 'PT. HIJAU SEJAHTERA BERSAMA', 17: 'Bayar tgl : 02 Maret 2026', 25: 'BRI'}
+Row  50: {9: 'Bayar tgl : 19 Februari 2026', 25: 'NO Rek:', 26: '013001002256309'}
+Row  51: {1: 'Terlampir bukti-bukti pendukung pembayaran ini', 25: 'a/n ', 26: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row  52: {1: 'Mohon Transfer ke:', 25: 'Bayar tgl : 16 Maret 2026'}
+Row  53: {1: 'BRI'}
+Row  54: {1: 'NO Rek:', 2: '013001002256309'}
+Row  55: {1: 'a/n ', 2: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row  56: {1: 'Bayar tgl : 09 Februari 2026'}
+Row  61: {1: 'No', 2: 'Tanggal', 4: 'Keterangan', 7: 'Jumlah', 9: 'No', 10: 'Tanggal', 12: 'Keterangan', 15: 'Jumlah', 17: 'No', 18: 'Tanggal', 20: 'Keterangan', 23: 'Jumlah', 25: 'No', 26: 'Tanggal', 28: 'Keterangan', 31: 'Jumlah'}
+Row  62: {1: 1, 2: '026', 3: 'Ongkos Angkut AMP LPG/12-14 FEB 2026', 7: 100750000, 9: 1, 10: '050', 11: 'Ongkos Angkut AMP LPG/9 APR 2026', 15: 15500000, 17: 1, 18: '057', 19: 'Ongkos Angkut AMP LPG/13 APR 2026', 23: 15500000, 25: 1, 26: '077', 27: 'Ongkos Angkut WMK LPG/APR 2026', 31: 12000000}
+Row  63: {3: 'PPh 23 ', 5: '08012600051874865', 6: '18/02/2026', 7: -2015000, 11: 'PPh 23 ', 13: '08002600128379788', 14: '14/04/2026', 15: -310000, 19: 'PPh 23 ', 21: '08002600133516529', 22: '16/04/2026', 23: -310000, 27: 'PPh 23 ', 29: '08002600151713875', 30: '02/05/2026', 31: -240000}
+Row  64: {3: 'SUSUT AMP/764 L', 7: -11574600, 11: 'SUSUT AMP/121 L', 15: -3575550, 19: 'SUSUT AMP/94 L', 23: -2777700, 25: 2, 26: '081', 27: 'Ongkos Angkut AMP BKI/MEI 2026', 31: 20000000}
+Row  65: {1: 4, 9: 2, 10: '051', 11: 'Ongkos Angkut AMP LPG/9 APR 2026', 15: 7750000, 17: 2, 18: '058', 19: 'Ongkos Angkut AMP LPG/13 APR 2026', 23: 15500000, 27: 'PPh 23 ', 29: '08002600163793118', 30: '08/05/2026', 31: -400000}
+Row  66: {11: 'PPh 23 ', 13: '08002600128406659', 14: '14/04/2026', 15: -155000, 19: 'PPh 23 ', 21: '08002600133519566', 22: '16/04/2026', 23: -310000, 25: 3, 26: '083', 27: 'Ongkos Angkut WMK LPG/MEI 2026', 31: 6000000}
+Row  67: {11: 'SUSUT AMP/74 L', 15: -2186700, 19: 'SUSUT AMP/176 L', 23: -5200800, 27: 'PPh 23 ', 29: '08002600163811278', 30: '08/05/2026', 31: -120000}
+Row  68: {9: 3, 10: '052', 11: 'Ongkos Angkut AMP LPG/9 APR 2026', 15: 7750000, 17: 3, 18: '059', 19: 'Ongkos Angkut AMP LPG/13 APR 2026', 23: 15500000}
+Row  69: {11: 'PPh 23 ', 13: '08002600128427829', 14: '14/04/2026', 15: -155000, 19: 'PPh 23 ', 21: '08002600133522537', 22: '16/04/2026', 23: -310000}
+Row  70: {6: 'TOTAL', 7: 87160400, 9: 4, 10: '053', 11: 'Ongkos Angkut AMP LPG/9 APR 2026', 15: 7750000, 17: 4, 18: '060', 19: 'Ongkos Angkut AMP LPG/13 APR 2026', 23: 7750000}
+Row  71: {11: 'PPh 23 ', 13: '08002600128450988', 14: '14/04/2026', 15: -155000, 19: 'PPh 23 ', 21: '08002600133525498', 22: '16/04/2026', 23: -155000, 30: 'TOTAL', 31: 37240000}
+Row  72: {1: 'Terlampir bukti-bukti pendukung pembayaran ini', 11: 'SUSUT AMP/39 L', 15: -1152450}
+Row  73: {1: 'Mohon Transfer ke:', 9: 5, 10: '054', 11: 'Ongkos Angkut AMP LPG/9 APR 2026', 15: 7750000, 25: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row  74: {1: 'BRI', 11: 'PPh 23 ', 13: '08002600128479600', 14: '14/04/2026', 15: -155000, 25: 'Mohon Transfer ke:'}
+Row  75: {1: 'NO Rek:', 2: '013001002256309', 22: 'TOTAL', 23: 45186500, 25: 'BRI'}
+Row  76: {1: 'a/n ', 2: 'PT. HIJAU SEJAHTERA BERSAMA', 25: 'NO Rek:', 26: '013001002256309'}
+Row  77: {1: 'Bayar tgl : 30 Maret 2026', 17: 'Terlampir bukti-bukti pendukung pembayaran ini', 25: 'a/n ', 26: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row  78: {14: 'TOTAL', 15: 38655300, 17: 'Mohon Transfer ke:', 25: 'Bayar tgl : 15 Juni  2026'}
+Row  79: {17: 'BRI'}
+Row  80: {9: 'Terlampir bukti-bukti pendukung pembayaran ini', 17: 'NO Rek:', 18: '013001002256309'}
+Row  81: {9: 'Mohon Transfer ke:', 17: 'a/n ', 18: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row  82: {9: 'BNI', 17: 'Bayar tgl : 25 Mei  2026'}
+Row  83: {9: 'No : 692-2915-57'}
+Row  84: {9: 'a/n ', 10: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row  85: {9: 'Bayar tgl : 18 Mei  2026'}
+Row  90: {1: 'No', 2: 'Tanggal', 4: 'Keterangan', 7: 'Jumlah', 9: 'No', 10: 'Tanggal', 12: 'Keterangan', 15: 'Jumlah', 17: 'No', 18: 'Tanggal', 20: 'Keterangan', 23: 'Jumlah', 25: 'No', 26: 'Tanggal', 28: 'Keterangan', 31: 'Jumlah'}
+Row  91: {1: 1, 2: '070', 3: 'Ongkos Angkut BKI LPG/APR 2026', 7: 60000000, 9: 1, 10: '129', 11: 'Ongkos Angkut BKI LPG/JUNI 2026', 15: 40000000, 17: 1, 18: '145', 19: 'Ongkos Angkut WMK LPG/JUNI 2026', 23: 6000000, 25: 1, 26: '150', 27: 'Ongkos Angkut BKI LPG/JUNI 2026', 31: 70000000}
+Row  92: {3: 'PPh 23 ', 5: '08002600146864147', 6: '27/04/2026', 7: -1200000, 11: 'PPh 23 ', 13: '08002600217034575', 14: '11/06/2026', 15: -800000, 19: 'PPh 23 ', 21: '08002600235719243', 22: '22/06/2026', 23: -120000, 27: 'PPh 23 ', 29: '08002600241515432', 30: '29/06/2026', 31: -1400000}
+Row  93: {3: 'SUSUT BKI/161 L', 7: -4830000, 9: 2, 10: '132', 11: 'Ongkos Angkut WMK LPG/JUNI 2026', 15: 6000000, 27: 'SUSUT BKI/68 L', 31: -1700000}
+Row  94: {1: 2, 2: '074', 3: 'Ongkos Angkut BKI LPG/APR 2026', 7: 40000000, 11: 'PPh 23 ', 13: '08002600217291300', 14: '12/06/2026', 15: -120000, 25: 2, 26: '151', 27: 'Ongkos Angkut SCK LPG/JUNI 2026', 31: 63000000}
+Row  95: {3: 'PPh 23 ', 5: '08002600150469840', 6: '30/04/2026', 7: -800000, 9: 3, 10: '135', 11: 'Ongkos Angkut WMK LPG/JUNI 2026', 15: 12000000, 27: 'PPh 23 ', 29: '08002600244607007', 30: '01/07/2026', 31: -1260000}
+Row  96: {3: 'SUSUT BKI/205 L', 7: -6150000, 11: 'PPh 23 ', 13: '08002600219956899', 14: '13/06/2026', 15: -240000, 27: 'SUSUT SCK/ 33 L', 31: -828300}
+Row  97: {1: 3, 2: '075', 3: 'Ongkos Angkut BKI LPG/APR 2026', 7: 10000000, 9: 4, 10: '136', 11: 'Ongkos Angkut SCK LPG/JUNI 2026', 15: 21000000, 25: 3, 26: '152', 27: 'Ongkos Angkut BKI LPG/JUNI 2026', 31: 10000000}
+Row  98: {3: 'PPh 23 ', 5: '08002600151707172', 6: '02/05/2026', 7: -200000, 11: 'PPh 23 ', 13: '08002600219961657', 14: '13/06/2026', 15: -420000, 22: 'TOTAL', 23: 5880000, 27: 'PPh 23 ', 29: '08002600244525588', 30: '01/07/2026', 31: -200000}
+Row  99: {1: 4, 2: '076', 3: 'Ongkos Angkut SCK LPG/APR 2026', 7: 10500000, 9: 5, 10: '137', 11: 'Ongkos Angkut BKI LPG/JUNI 2026', 15: 10000000, 25: 4, 26: '155', 27: 'Ongkos Angkut BKI LPG/JUNI 2026', 31: 50000000}
+Row 100: {3: 'PPh 23 ', 5: '08002600151710926', 6: '02/05/2026', 7: -210000, 11: 'PPh 23 ', 13: '08002600219967539', 14: '13/06/2026', 15: -200000, 17: 'Terlampir bukti-bukti pendukung pembayaran ini', 27: 'PPh 23 ', 29: '08012600248848810', 30: '03/07/2026', 31: -1000000}
+Row 101: {1: 5, 2: '079', 3: 'Ongkos Angkut BKI LPG/APR 2026', 7: 50000000, 11: 'SUSUT BKI/ 36 L', 15: -900000, 17: 'Mohon Transfer ke:', 27: 'SUSUT BKI/ 35 L', 31: -875000}
+Row 102: {3: 'PPh 23 ', 5: '08002600155130168', 6: '05/05/2026', 7: -1000000, 9: 6, 10: '140', 11: 'Ongkos Angkut BKI LPG/JUNI 2026', 15: 30000000, 17: 'BRI', 25: 5, 26: '157', 27: 'Ongkos Angkut SCK LPG/JUNI 2026', 31: 21000000}
+Row 103: {1: 6, 2: '082', 3: 'Ongkos Angkut SCK LPG/APR 2026', 7: 21000000, 11: 'PPh 23 ', 13: '08002600228643094', 14: '18/06/2026', 15: -600000, 17: 'NO Rek:', 18: '013001002256309', 27: 'PPh 23 ', 29: '08002600248869336', 30: '03/07/2026', 31: -420000}
+Row 104: {3: 'PPh 23 ', 5: '08002600163797374', 6: '02/05/2026', 7: -420000, 11: 'SUSUT BKI/ 41 L', 15: -1025000, 17: 'a/n ', 18: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row 105: {9: 7, 10: '141', 11: 'Ongkos Angkut SCK LPG/JUNI 2026', 15: 31500000, 17: 'Bayar tgl : 03 Agustus  2026'}
+Row 106: {6: 'TOTAL', 7: 176690000, 11: 'PPh 23 ', 13: '08002600228665228', 14: '18/06/2026', 15: -630000, 30: 'TOTAL', 31: 206316700}
+Row 108: {1: 'Terlampir bukti-bukti pendukung pembayaran ini', 14: 'TOTAL', 15: 145565000, 25: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row 109: {1: 'Mohon Transfer ke:', 25: 'Mohon Transfer ke:'}
+Row 110: {1: 'BRI', 9: 'Terlampir bukti-bukti pendukung pembayaran ini', 25: 'BRI'}
+Row 111: {1: 'NO Rek:', 2: '013001002256309', 9: 'Mohon Transfer ke:', 25: 'NO Rek:', 26: '013001002256309'}
+Row 112: {1: 'a/n ', 2: 'PT. HIJAU SEJAHTERA BERSAMA', 9: 'BRI', 25: 'a/n ', 26: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row 113: {1: 'Bayar tgl : 15 Juni  2026', 9: 'NO Rek:', 10: '013001002256309', 25: 'Bayar tgl : 03 Agustus  2026'}
+Row 114: {9: 'a/n ', 10: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row 115: {9: 'Bayar tgl : 20 Juli  2026'}
+Row 118: {1: 'No', 2: 'Tanggal', 4: 'Keterangan', 7: 'Jumlah', 9: 'No', 10: 'Tanggal', 12: 'Keterangan', 15: 'Jumlah', 17: 'No', 18: 'Tanggal', 20: 'Keterangan', 23: 'Jumlah', 25: 'No', 26: 'Tanggal', 28: 'Keterangan', 31: 'Jumlah'}
+Row 119: {1: 1, 2: '159', 3: 'Ongkos Angkut BKI LPG/JULI 2026', 7: 10000000, 9: 1, 10: '163', 11: 'Ongkos Angkut BKI LPG/JULI 2026', 15: 40000000, 17: 1, 18: '171', 19: 'Ongkos Angkut SCK LPG/JULI 2026', 23: 21000000, 25: 1, 26: '176', 27: 'Ongkos Angkut BKI LPG/JULI 2026', 31: 20000000}
+Row 120: {3: 'PPh 23 ', 5: '08002600258189527', 6: '09/07/2026', 7: -200000, 11: 'PPh 23 ', 13: '08012600270581643', 14: '16/07/2026', 15: -800000, 19: 'PPh 23 ', 21: '08002600280946277', 22: '20/07/2026', 23: -420000, 27: 'PPh 23 ', 29: '08002600286952618', 30: '23/07/2026', 31: -400000}
+Row 121: {11: 'SUSUT BKI/62 L', 15: -1240000, 17: 2, 18: '174', 19: 'Ongkos Angkut SCK LPG/JULI 2026', 23: 21000000}
+Row 122: {9: 2, 10: '165', 11: 'Ongkos Angkut SCK LPG/JULI 2026', 15: 10500000, 19: 'PPh 23 ', 21: '08002600283671448', 22: '21/07/2026', 23: -420000}
+Row 123: {11: 'PPh 23 ', 13: '08002600273712179', 14: '16/07/2026', 15: -210000}
+Row 124: {9: 3, 10: '168', 11: 'Ongkos Angkut BKI LPG/JULI 2026', 15: 20000000}
+Row 125: {11: 'PPh 23 ', 13: '08002600278816846', 14: '18/07/2026', 15: -400000, 30: 'TOTAL', 31: 19600000}
+Row 126: {11: 'SUSUT BKI/41 L', 15: -820000, 22: 'TOTAL', 23: 41160000}
+Row 127: {6: 'TOTAL', 7: 9800000, 9: 4, 10: '169', 11: 'Ongkos Angkut SCK LPG/JULI 2026', 15: 21000000, 25: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row 128: {11: 'PPh 23 ', 13: '08002600278827428', 14: '18/07/2026', 15: -420000, 17: 'Terlampir bukti-bukti pendukung pembayaran ini', 25: 'Mohon Transfer ke:'}
+Row 129: {1: 'Terlampir bukti-bukti pendukung pembayaran ini', 17: 'Mohon Transfer ke:', 25: 'BRI'}
+Row 130: {1: 'Mohon Transfer ke:', 17: 'BRI', 25: 'NO Rek:', 26: '013001002256309'}
+Row 131: {1: 'BRI', 17: 'NO Rek:', 18: '013001002256309', 25: 'a/n ', 26: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row 132: {1: 'NO Rek:', 2: '013001002256309', 17: 'a/n ', 18: 'PT. HIJAU SEJAHTERA BERSAMA', 25: 'Bayar tgl : 31 Agustus  2026'}
+Row 133: {1: 'a/n ', 2: 'PT. HIJAU SEJAHTERA BERSAMA', 14: 'TOTAL', 15: 87610000, 17: 'Bayar tgl : 24 Agustus  2026'}
+Row 134: {1: 'Bayar tgl : 10 Agustus  2026'}
+Row 135: {9: 'Terlampir bukti-bukti pendukung pembayaran ini'}
+Row 136: {9: 'Mohon Transfer ke:'}
+Row 137: {9: 'BRI'}
+Row 138: {9: 'NO Rek:', 10: '013001002256309'}
+Row 139: {9: 'a/n ', 10: 'PT. HIJAU SEJAHTERA BERSAMA'}
+Row 140: {9: 'Bayar tgl : 17 Agustus  2026'}

@@ -98,5 +98,5 @@ fi
 #    . /etc/bash_completion
 #fi
 alias agy="agy --dangerously-skip-permissions"
-[ -f ~/.env ] && export $(cat ~/.env | xargs)
+[ -f ~/.env ] && set -a && . ~/.env && set +a
 

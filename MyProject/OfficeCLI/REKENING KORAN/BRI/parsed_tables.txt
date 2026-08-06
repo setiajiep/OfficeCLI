@@ -1,0 +1,87 @@
+Total tables found in Sheet1: 17
+
+Table  1 [Row 2, Col 2]:
+  Bayar tgl : Bayar tgl : 12 Januari 2026
+  Total     : 109605000
+  Invoices  : ['465', '468', '471', '477', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  2 [Row 31, Col 2]:
+  Bayar tgl : Bayar tgl : 19 Februari 2026
+  Total     : 201572700
+  Invoices  : ['479', '482', '488', '489', '005', '007', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  3 [Row 31, Col 10]:
+  Bayar tgl : Bayar tgl : 19 Februari 2026
+  Total     : 100091000
+  Invoices  : ['008', '010', '011', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  4 [Row 31, Col 18]:
+  Bayar tgl : Bayar tgl : 16 Maret 2026
+  Total     : 4
+  Invoices  : ['017', '019', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  5 [Row 31, Col 26]:
+  Bayar tgl : Bayar tgl : 16 Maret 2026
+  Total     : 95409500
+  Invoices  : ['024', '025', '026', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  6 [Row 61, Col 2]:
+  Bayar tgl : Bayar tgl : 18 Mei  2026
+  Total     : 4
+  Invoices  : ['026', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  7 [Row 61, Col 10]:
+  Bayar tgl : Bayar tgl : 18 Mei  2026
+  Total     : 38655300
+  Invoices  : ['050', '051', '052', '053', '054', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  8 [Row 61, Col 18]:
+  Bayar tgl : Bayar tgl : 25 Mei  2026
+  Total     : 45186500
+  Invoices  : ['057', '058', '059', '060', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table  9 [Row 61, Col 26]:
+  Bayar tgl : Bayar tgl : 15 Juni  2026
+  Total     : 37240000
+  Invoices  : ['077', '081', '083', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 10 [Row 90, Col 2]:
+  Bayar tgl : Bayar tgl : 15 Juni  2026
+  Total     : 176690000
+  Invoices  : ['070', '074', '075', '076', '079', '082', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 11 [Row 90, Col 10]:
+  Bayar tgl : Bayar tgl : 03 Agustus  2026
+  Total     : 145565000
+  Invoices  : ['129', '132', '135', '136', '137', '140', '141', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 12 [Row 90, Col 18]:
+  Bayar tgl : Bayar tgl : 03 Agustus  2026
+  Total     : 5880000
+  Invoices  : ['145', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 13 [Row 90, Col 26]:
+  Bayar tgl : Bayar tgl : 03 Agustus  2026
+  Total     : 206316700
+  Invoices  : ['150', '151', '152', '155', '157', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 14 [Row 118, Col 2]:
+  Bayar tgl : Bayar tgl : 17 Agustus  2026
+  Total     : 4
+  Invoices  : ['159', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 15 [Row 118, Col 10]:
+  Bayar tgl : Bayar tgl : 17 Agustus  2026
+  Total     : 87610000
+  Invoices  : ['163', '165', '168', '169', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 16 [Row 118, Col 18]:
+  Bayar tgl : Bayar tgl : 24 Agustus  2026
+  Total     : 41160000
+  Invoices  : ['171', '174', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+
+Table 17 [Row 118, Col 26]:
+  Bayar tgl : Bayar tgl : 31 Agustus  2026
+  Total     : 19600000
+  Invoices  : ['176', '013001002256309', 'PT. HIJAU SEJAHTERA BERSAMA']
+

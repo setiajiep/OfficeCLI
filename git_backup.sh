@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load environment file if present
-[ -f /root/.env ] && export $(grep -v '^#' /root/.env | xargs) 2>/dev/null
+[ -f /root/.env ] && set -a && . /root/.env && set +a 2>/dev/null
 
 # Configuration
 KONTROL_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"

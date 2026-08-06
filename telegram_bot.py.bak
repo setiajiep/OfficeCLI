@@ -342,8 +342,6 @@ def render_model_picker(user_id):
         btn_label = f"{prefix}{m['icon']} {m['name']}"
         btns.append([{"text": btn_label, "callback_data": f"set_model:{m['id']}"}])
 
-    btns.append([{"text": "❌ Tutup", "callback_data": "close_msg"}])
-    btns.append([{"text": "❌ Tutup", "callback_data": "close_msg"}])
     reply_markup = {"inline_keyboard": btns}
     return text, reply_markup
 
@@ -488,29 +486,6 @@ def send_message(chat_id, text, reply_markup=None, parse_mode=None):
         if res and res.get("ok"):
             sent_msgs.append(res["result"])
     return sent_msgs
-
-def delete_message(chat_id, message_id):
-    if not message_id:
-        return None
-    try:
-        data = {"chat_id": str(chat_id), "message_id": int(message_id)}
-        return api_request("deleteMessage", data)
-    except Exception as e:
-        print(f"Error deleting message {message_id}: {e}", file=sys.stderr)
-        return None
-
-USER_MENU_STATE = {}
-
-def get_user_menu_state(user_id):
-    str_id = str(user_id)
-    if str_id not in USER_MENU_STATE:
-        USER_MENU_STATE[str_id] = {
-            'last_fm_msg_id': None,
-            'last_menu_msg_id': None,
-            'last_help_msg_id': None,
-            'last_status_msg_id': None
-        }
-    return USER_MENU_STATE[str_id]
 
 def edit_message(chat_id, message_id, text, reply_markup=None, parse_mode=None):
     if not text:
@@ -1031,7 +1006,6 @@ def render_file_manager(user_id, current_dir, page=1, notice=None):
             pag_row.append({"text": "Next \u25b6\ufe0f", "callback_data": f"fm_cd:{dir_key}:{page+1}"})
         inline_keyboard.append(pag_row)
 
-    inline_keyboard.append([{"text": "❌ Tutup File Manager", "callback_data": "fm_action:close_fm"}])
     reply_markup = {"inline_keyboard": inline_keyboard}
     return text, reply_markup
 
@@ -1194,11 +1168,6 @@ def process_callback_query(cq):
         return
 
     current_cwd = get_user_cwd(user_id)
-
-    if data == "close_msg":
-        answer_callback_query(cq_id, "🙈 Ditutup")
-        delete_message(chat_id, message_id)
-        return
 
     if data == "menu_ask_agy":
         answer_callback_query(cq_id, "🤖 Silakan ketik pesan/prompt Anda!")
@@ -1724,13 +1693,6 @@ def process_callback_query(cq):
         action = data.split("fm_action:", 1)[1]
         if action == "noop":
             answer_callback_query(cq_id)
-        elif action in ["close_fm", "fm_close"]:
-            answer_callback_query(cq_id, "🙈 File Manager ditutup")
-            delete_message(chat_id, message_id)
-            st = get_user_menu_state(user_id)
-            if st.get('last_fm_msg_id') == message_id:
-                st['last_fm_msg_id'] = None
-            return
         elif action == "view_status":
             answer_callback_query(cq_id, "📊 Memuat Status VPS...")
             st = get_system_status()
@@ -2405,40 +2367,12 @@ def process_update(update):
 
     text = message["text"].strip()
 
-    # Define menu trigger strings for auto-deleting trigger messages
-    menu_triggers = [
-        "/start", "/menu", "📱 Tombol Menu", "📱 Menu",
-        "fm", "/fm", "ls", "/ls", "browse", "/browse", "📂 File Manager",
-        "/closemenu", "/hidemenu", "/close", "🙈 Sembunyikan Menu",
-        "/help", "/bantuan", "❓ Bantuan",
-        "/model", "/models", "/selectmodel", "🤖 Pilih Model AI", "🎯 Pilih Model AI",
-        "📜 Riwayat Sesi", "📜 Pilih Sesi", "📜 List Sesi", "/sessions",
-        "/status", "/sys", "/vps", "📊 Status VPS",
-        "/chart", "/syschart", "📈 Chart VPS",
-        "/top", "/ps", "/procs", "⚡ Top Processes", "⚡ Top Proses",
-        "/services", "/service", "🛠️ Services", "🛠️ Layanan",
-        "💬 Sesi Lanjut", "💬 Sesi Lanjut / Baru", "💬 Mode Sesi", "🆕 Sesi Baru",
-        "🤖 Tanya AGY AI", "/ask", "/agy",
-        "💻 Jalankan Bash", "💻 Exec Bash", "💻 Run Bash", "/exec_help",
-        "📦 Backup VPS", "/backup", "/backupvps",
-        "🌤️ Cuaca", "📲 QR Code", "🔗 Short URL", "🎬 Unduh Video", "🎵 Unduh MP3",
-        "📡 Ping", "🌍 IP Info", "🧮 Kalkulator", "🚀 Bandwidth", "🌐 Web Reader"
-    ]
-
-    if text in menu_triggers or text.lower() in menu_triggers:
-        delete_message(chat_id, message["message_id"])
-
     if text in ["/model", "/models", "/selectmodel", "🤖 Pilih Model AI", "🎯 Pilih Model AI"]:
         msg_text, reply_markup = render_model_picker(user_id)
         send_message(chat_id, msg_text, reply_markup=reply_markup, parse_mode="Markdown")
         return
 
     if text in ["/start", "/menu", "📱 Tombol Menu"]:
-        u_st = get_user_menu_state(user_id)
-        if u_st.get('last_menu_msg_id'):
-            delete_message(chat_id, u_st['last_menu_msg_id'])
-            u_st['last_menu_msg_id'] = None
-
         st = get_system_status()
         disk_free  = st.get('disk_free_gb', 0)
         ram_used   = st.get('mem_used_mb', 0)
@@ -2450,6 +2384,7 @@ def process_update(update):
         session_mode = get_session_mode(user_id)
         session_label = "Lanjut" if session_mode == "continue" else ("Baru" if session_mode == "new" else f"Custom ({session_mode[:8]}...)") 
 
+        # RAM progress bar
         filled = int(ram_pct / 10)
         ram_bar = "█" * filled + "░" * (10 - filled)
 
@@ -2490,27 +2425,13 @@ def process_update(update):
             ],
             [
                 {"text": "❓ Bantuan & Panduan", "callback_data": "menu_help"}
-            ],
-            [
-                {"text": "❌ Tutup Dashboard", "callback_data": "close_msg"}
             ]
         ]}
         send_message(chat_id, menu_text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
-        sent = send_message(chat_id, "⚡ *AKSI CEPAT:*", reply_markup=inline_dash, parse_mode="Markdown")
-        if sent and len(sent) > 0:
-            u_st['last_menu_msg_id'] = sent[-1]["message_id"]
+        send_message(chat_id, "⚡ *AKSI CEPAT:*", reply_markup=inline_dash, parse_mode="Markdown")
         return
 
     if text in ["/closemenu", "/hidemenu", "/close", "🙈 Sembunyikan Menu"]:
-        u_st = get_user_menu_state(user_id)
-        if u_st.get('last_menu_msg_id'):
-            delete_message(chat_id, u_st['last_menu_msg_id'])
-            u_st['last_menu_msg_id'] = None
-        if u_st.get('last_fm_msg_id'):
-            delete_message(chat_id, u_st['last_fm_msg_id'])
-            u_st['last_fm_msg_id'] = None
-
-        close_btn = {"inline_keyboard": [[{"text": "❌ Tutup", "callback_data": "close_msg"}]]}
         send_message(
             chat_id,
             "🙈 Tombol menu keyboard disembunyikan.\n\n💡 Ketik `/menu` kapan saja untuk memunculkan kembali tombol menu.",
@@ -2520,15 +2441,8 @@ def process_update(update):
         return
 
     if text.lower() in ["fm", "/fm", "ls", "/ls", "browse", "/browse"] or text == "📂 File Manager":
-        u_st = get_user_menu_state(user_id)
-        if u_st.get('last_fm_msg_id'):
-            delete_message(chat_id, u_st['last_fm_msg_id'])
-            u_st['last_fm_msg_id'] = None
-
         msg_text, reply_markup = render_file_manager(user_id, current_cwd, page=1)
-        sent = send_message(chat_id, msg_text, reply_markup=reply_markup)
-        if sent and len(sent) > 0:
-            u_st['last_fm_msg_id'] = sent[-1]["message_id"]
+        send_message(chat_id, msg_text, reply_markup=reply_markup)
         return
 
     if text in ["📜 Riwayat Sesi", "📜 Pilih Sesi", "📜 List Sesi"]:
@@ -2591,11 +2505,6 @@ def process_update(update):
         return
 
     if text in ["/status", "/sys", "/vps", "📊 Status VPS"]:
-        u_st = get_user_menu_state(user_id)
-        if u_st.get('last_status_msg_id'):
-            delete_message(chat_id, u_st['last_status_msg_id'])
-            u_st['last_status_msg_id'] = None
-
         st = get_system_status()
         status_text = (
             "📊 *REAL-TIME VPS SYSTEM DASHBOARD*\n"
@@ -2608,10 +2517,7 @@ def process_update(update):
             "🤖 *Bot Service:* Running & Active\n"
             "⚡ *AI Engine:* Antigravity CLI Active"
         )
-        close_btn = {"inline_keyboard": [[{"text": "❌ Tutup Status", "callback_data": "close_msg"}]]}
-        sent = send_message(chat_id, status_text, reply_markup=close_btn, parse_mode="Markdown")
-        if sent and len(sent) > 0:
-            u_st['last_status_msg_id'] = sent[-1]["message_id"]
+        send_message(chat_id, status_text, parse_mode="Markdown")
         return
 
     if text in ["/chart", "/syschart", "📈 Chart VPS"]:
@@ -2702,11 +2608,6 @@ def process_update(update):
         return
 
     if text in ["/help", "/bantuan", "❓ Bantuan"]:
-        u_st = get_user_menu_state(user_id)
-        if u_st.get('last_help_msg_id'):
-            delete_message(chat_id, u_st['last_help_msg_id'])
-            u_st['last_help_msg_id'] = None
-
         help_txt = (
             "🤖 *ANTIGRAVITY AI (AGY) TELEGRAM CONTROLLER*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -2730,10 +2631,7 @@ def process_update(update):
             "• `/backup` : Trigger backup otomatis ke GitHub & Telegram.\n"
             "• `/menu` : Munculkan kembali tombol keyboard menu utama."
         )
-        close_btn = {"inline_keyboard": [[{"text": "❌ Tutup Panduan", "callback_data": "close_msg"}]]}
-        sent = send_message(chat_id, help_txt, reply_markup=close_btn, parse_mode="Markdown")
-        if sent and len(sent) > 0:
-            u_st['last_help_msg_id'] = sent[-1]["message_id"]
+        send_message(chat_id, help_txt, parse_mode="Markdown")
         return
 
     if text in ["/backup", "/backupvps"]:
@@ -2763,19 +2661,13 @@ def process_update(update):
         return
 
     if text.startswith("/cd "):
-        delete_message(chat_id, message["message_id"])
         target_dir = text[4:].strip()
         if not target_dir.startswith("/"):
             target_dir = os.path.join(current_cwd, target_dir)
         if set_user_cwd(user_id, target_dir):
             new_cwd = get_user_cwd(user_id)
-            u_st = get_user_menu_state(user_id)
-            if u_st.get('last_fm_msg_id'):
-                delete_message(chat_id, u_st['last_fm_msg_id'])
             msg_text, reply_markup = render_file_manager(user_id, new_cwd, page=1)
-            sent = send_message(chat_id, msg_text, reply_markup=reply_markup)
-            if sent and len(sent) > 0:
-                u_st['last_fm_msg_id'] = sent[-1]["message_id"]
+            send_message(chat_id, msg_text, reply_markup=reply_markup)
         else:
             send_message(chat_id, f"❌ Directory tidak ditemukan: {target_dir}")
         return

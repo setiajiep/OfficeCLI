@@ -182,7 +182,7 @@ if ! grep -q 'alias agy=' /root/.bashrc 2>/dev/null; then
 fi
 
 if ! grep -q '\.env' /root/.bashrc 2>/dev/null; then
-    echo '[ -f ~/.env ] && export $(cat ~/.env | xargs)' >> /root/.bashrc
+    echo '[ -f ~/.env ] && set -a && . ~/.env && set +a' >> /root/.bashrc
 fi
 
 # 13. Setup AGY binary symlink untuk root

@@ -576,7 +576,42 @@ for row in range(4, 6):
 headers_akr = [
     'No', 'Periode', 'Tanggal & Waktu', 'No. Rekening', 'Kategori',
     'Keterangan / Remark', 'Jenis (GL)', 'Mutasi Kredit / Masuk (Rp)',
-    'User ID', 'Kode Tran'
+    'User ID', 'Kode Tran', 'No. Invoice (Sheet1)'
+]
+
+inv_mapping_list = [
+    "INV 464, 467",
+    "INV 466, 469",
+    "INV 470",
+    "INV 465, 468, 471, 477",
+    "INV 478, 480",
+    "INV 004, 006",
+    "INV 479, 482, 488, 489, 005, 007",
+    "INV 481",
+    "INV 008, 010, 011",
+    "INV 012, 013, 015",
+    "INV 014, 016, 018",
+    "INV 017, 019",
+    "INV 021, 022, 023",
+    "INV 024, 025, 026",
+    "INV 029",
+    "INV 026",
+    "INV 034, 035, 036, 037, 038, 039",
+    "INV 040, 041",
+    "INV 042",
+    "INV 050, 051, 052, 053, 054",
+    "INV 057, 058, 059, 060",
+    "INV 064",
+    "INV 070, 074, 075, 076, 077, 079, 081, 082, 083",
+    "INV 096, 097",
+    "INV 102, 103, 104, 105, 106, 107, 108",
+    "INV 112, 114, 115, 117, 118, 119",
+    "INV 125, 126, 127",
+    "INV 129, 132, 135, 136, 137, 140, 141",
+    "INV 133, 134",
+    "INV 142",
+    "INV 146",
+    "INV 148, 149"
 ]
 
 for col_num, h_text in enumerate(headers_akr, 1):
@@ -602,12 +637,14 @@ for idx, (_, r) in enumerate(df_akr.iterrows(), 1):
     ws4.cell(row=r_num, column=8, value=r['MUTASI_KREDIT']).number_format = CURRENCY_FORMAT
     ws4.cell(row=r_num, column=9, value=str(r['TRUSER']) if pd.notna(r['TRUSER']) else '-').alignment = align_center
     ws4.cell(row=r_num, column=10, value=str(r['KODE_TRAN']) if pd.notna(r['KODE_TRAN']) else '-').alignment = align_center
+    inv_str = inv_mapping_list[idx-1] if idx-1 < len(inv_mapping_list) else '-'
+    ws4.cell(row=r_num, column=11, value=inv_str).alignment = align_left
 
     fill_row = fill_zebra if idx % 2 == 0 else PatternFill(fill_type=None)
     if r['MUTASI_KREDIT'] >= 100000000:
         fill_row = fill_green_tint
 
-    for c in range(1, 11):
+    for c in range(1, 12):
         cell = ws4.cell(row=r_num, column=c)
         cell.font = font_regular
         cell.border = border_all_thin
@@ -627,8 +664,9 @@ for c in range(3, 8):
 ws4.cell(row=r_akr_tot, column=8, value=f"=SUM(H8:H{r_akr_tot-1})").number_format = CURRENCY_FORMAT
 ws4.cell(row=r_akr_tot, column=9, value="-").alignment = align_center
 ws4.cell(row=r_akr_tot, column=10, value="-").alignment = align_center
+ws4.cell(row=r_akr_tot, column=11, value="-").alignment = align_center
 
-for c in range(1, 11):
+for c in range(1, 12):
     cell = ws4.cell(row=r_akr_tot, column=c)
     cell.font = font_bold
     cell.fill = fill_total

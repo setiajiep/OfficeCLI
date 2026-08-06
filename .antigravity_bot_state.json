@@ -2,13 +2,13 @@
   "owner_id": 508687457,
   "owner_username": "Setiaji_Eka_Putra",
   "cwds": {
-    "508687457": "/root/MyProject/PROYEK APLIKASI"
+    "508687457": "/root/MyProject/OfficeCLI/REKENING KORAN/BRI"
   },
   "show_hidden": {
     "508687457": false
   },
   "session_modes": {
-    "508687457": "continue"
+    "508687457": "new"
   },
   "models": {
     "508687457": "gemini-3.6-flash-medium"
