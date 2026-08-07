@@ -1,0 +1,933 @@
+{
+  "version": 3,
+  "skills": {
+    "data-manager-api-audience-ingestion": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/data-manager-api-audience-ingestion/SKILL.md",
+      "skillFolderHash": "6121bfdbfc92040301edd287bd23ce49400b53f3",
+      "installedAt": "2026-08-07T01:14:27.402Z",
+      "updatedAt": "2026-08-07T01:14:27.402Z"
+    },
+    "data-manager-api-event-ingestion": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/data-manager-api-event-ingestion/SKILL.md",
+      "skillFolderHash": "d1486588e25ed496fa42d783d905b5520f862731",
+      "installedAt": "2026-08-07T01:14:27.405Z",
+      "updatedAt": "2026-08-07T01:14:27.405Z"
+    },
+    "data-manager-api-setup": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/data-manager-api-setup/SKILL.md",
+      "skillFolderHash": "fdb546e2f0c5df7428d089caeee66ade70a2b3da",
+      "installedAt": "2026-08-07T01:14:27.406Z",
+      "updatedAt": "2026-08-07T01:14:27.406Z"
+    },
+    "google-ads-api-account-diagnostics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-ads-api-account-diagnostics/SKILL.md",
+      "skillFolderHash": "47d7d4f3c483517ff47b392aed544bc288e0263a",
+      "installedAt": "2026-08-07T01:14:27.407Z",
+      "updatedAt": "2026-08-07T01:14:27.407Z"
+    },
+    "google-ads-api-mcp-setup": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-ads-api-mcp-setup/SKILL.md",
+      "skillFolderHash": "19d70300adc7410b492daf314a59452f3e417806",
+      "installedAt": "2026-08-07T01:14:27.408Z",
+      "updatedAt": "2026-08-07T01:14:27.408Z"
+    },
+    "google-ads-api-quickstart": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-ads-api-quickstart/SKILL.md",
+      "skillFolderHash": "4020f47521608389c26a61c1870e4f899e5965c9",
+      "installedAt": "2026-08-07T01:14:27.409Z",
+      "updatedAt": "2026-08-07T01:14:27.409Z"
+    },
+    "google-mobile-ads-android-migrate-to-next-gen": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-mobile-ads-android-migrate-to-next-gen/SKILL.md",
+      "skillFolderHash": "90b2b77afe2917e0f77fba0a828025eecac56a18",
+      "installedAt": "2026-08-07T01:14:27.410Z",
+      "updatedAt": "2026-08-07T01:14:27.410Z"
+    },
+    "google-mobile-ads-banner": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-mobile-ads-banner/SKILL.md",
+      "skillFolderHash": "a04fc52a6f59d40ad793fb670140eea6ab167dd3",
+      "installedAt": "2026-08-07T01:14:27.411Z",
+      "updatedAt": "2026-08-07T01:14:27.411Z"
+    },
+    "google-mobile-ads-get-started": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-mobile-ads-get-started/SKILL.md",
+      "skillFolderHash": "55f275027e778646d83ab0e1af05f82dd60b9afb",
+      "installedAt": "2026-08-07T01:14:27.411Z",
+      "updatedAt": "2026-08-07T01:14:27.411Z"
+    },
+    "google-mobile-ads-interstitial": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-mobile-ads-interstitial/SKILL.md",
+      "skillFolderHash": "8cf2cf9b39d1b54e4ec7146f8d97e27fdbd909d1",
+      "installedAt": "2026-08-07T01:14:27.428Z",
+      "updatedAt": "2026-08-07T01:14:27.428Z"
+    },
+    "google-mobile-ads-rewarded": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/google-mobile-ads-rewarded/SKILL.md",
+      "skillFolderHash": "2e19221d11e873d0231ad6921e0a4dc2c82c2f77",
+      "installedAt": "2026-08-07T01:14:27.430Z",
+      "updatedAt": "2026-08-07T01:14:27.430Z"
+    },
+    "ima-sdk-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/ads/ima-sdk-basics/SKILL.md",
+      "skillFolderHash": "94df544b3d182656897c2bd2f6746c3c99051de5",
+      "installedAt": "2026-08-07T01:14:27.431Z",
+      "updatedAt": "2026-08-07T01:14:27.431Z"
+    },
+    "google-analytics-admin-api-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/analytics/google-analytics-admin-api-basics/SKILL.md",
+      "skillFolderHash": "970603f7a576225382562da749f37254171c3c02",
+      "installedAt": "2026-08-07T01:14:27.432Z",
+      "updatedAt": "2026-08-07T01:14:27.432Z"
+    },
+    "google-analytics-data-api-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/analytics/google-analytics-data-api-basics/SKILL.md",
+      "skillFolderHash": "24d33d7d3fb1b86966ea85e3ce9a5f717a75f1bb",
+      "installedAt": "2026-08-07T01:14:27.433Z",
+      "updatedAt": "2026-08-07T01:14:27.433Z"
+    },
+    "agent-platform-alert-configuration": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-alert-configuration/SKILL.md",
+      "skillFolderHash": "6a7c3040f41589a898a11701b86bc8c3fd3d2b66",
+      "installedAt": "2026-08-07T01:14:27.435Z",
+      "updatedAt": "2026-08-07T01:14:27.435Z"
+    },
+    "agent-platform-deploy": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-deploy/SKILL.md",
+      "skillFolderHash": "961c63e165e0a5f53ebcdd4068a3c93daec4f0c3",
+      "installedAt": "2026-08-07T01:14:27.436Z",
+      "updatedAt": "2026-08-07T01:14:27.436Z"
+    },
+    "agent-platform-endpoint-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-endpoint-management/SKILL.md",
+      "skillFolderHash": "dea7a9506e1701a676703506eea529d0d1da6c9b",
+      "installedAt": "2026-08-07T01:14:27.437Z",
+      "updatedAt": "2026-08-07T01:14:27.437Z"
+    },
+    "agent-platform-eval-flywheel": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-eval-flywheel/SKILL.md",
+      "skillFolderHash": "9454c55c35f1ac0ca39253af5061b9fbb04e15e8",
+      "installedAt": "2026-08-07T01:14:27.438Z",
+      "updatedAt": "2026-08-07T01:14:27.438Z"
+    },
+    "agent-platform-inference": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-inference/SKILL.md",
+      "skillFolderHash": "af8ab71c52364e66b5c2b41f515ac8226ec1ddb6",
+      "installedAt": "2026-08-07T01:14:27.445Z",
+      "updatedAt": "2026-08-07T01:14:27.445Z"
+    },
+    "agent-platform-migrate-from-ai-studio": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-migrate-from-ai-studio/SKILL.md",
+      "skillFolderHash": "c618af97310447f5d036a5ce6255979dffac6397",
+      "installedAt": "2026-08-07T01:14:27.446Z",
+      "updatedAt": "2026-08-07T01:14:27.446Z"
+    },
+    "agent-platform-model-registry": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-model-registry/SKILL.md",
+      "skillFolderHash": "c53bb9ce55473e83f89c5e6c5da65bf7dbaca678",
+      "installedAt": "2026-08-07T01:14:27.446Z",
+      "updatedAt": "2026-08-07T01:14:27.446Z"
+    },
+    "agent-platform-prompt-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-prompt-management/SKILL.md",
+      "skillFolderHash": "9a98253712fe6fa1d2ac8378e2f5aa117fb4cf34",
+      "installedAt": "2026-08-07T01:14:27.447Z",
+      "updatedAt": "2026-08-07T01:14:27.447Z"
+    },
+    "agent-platform-rag-engine-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-rag-engine-management/SKILL.md",
+      "skillFolderHash": "69505d2477c028df79e521e0908f0771133e839f",
+      "installedAt": "2026-08-07T01:14:27.448Z",
+      "updatedAt": "2026-08-07T01:14:27.448Z"
+    },
+    "agent-platform-skill-registry": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-skill-registry/SKILL.md",
+      "skillFolderHash": "a27bdae590f8e33560f87c9c0f2522c7d8a4cfe1",
+      "installedAt": "2026-08-07T01:14:27.449Z",
+      "updatedAt": "2026-08-07T01:14:27.449Z"
+    },
+    "agent-platform-troubleshooting": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-troubleshooting/SKILL.md",
+      "skillFolderHash": "b053d11e6a6d61605f22688c08f377d07fd3a8d0",
+      "installedAt": "2026-08-07T01:14:27.452Z",
+      "updatedAt": "2026-08-07T01:14:27.452Z"
+    },
+    "agent-platform-tuning": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-tuning/SKILL.md",
+      "skillFolderHash": "2e2a605fa4dec67a5e68f3c9ca9a63946fc33f33",
+      "installedAt": "2026-08-07T01:14:27.453Z",
+      "updatedAt": "2026-08-07T01:14:27.453Z"
+    },
+    "agent-platform-tuning-management": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/agent-platform-tuning-management/SKILL.md",
+      "skillFolderHash": "9a5fe20cabf8b78a0b0c838309c4dd53748c7ee9",
+      "installedAt": "2026-08-07T01:14:27.454Z",
+      "updatedAt": "2026-08-07T01:14:27.454Z"
+    },
+    "alloydb-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/alloydb-basics/SKILL.md",
+      "skillFolderHash": "1ce7947392394106cd2272802061c2c39f2d96e9",
+      "installedAt": "2026-08-07T01:14:27.456Z",
+      "updatedAt": "2026-08-07T01:14:27.456Z"
+    },
+    "bigquery-ai-ml": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/bigquery-ai-ml/SKILL.md",
+      "skillFolderHash": "bd2b826978a424ee736200e7879206b050986ff9",
+      "installedAt": "2026-08-07T01:14:27.457Z",
+      "updatedAt": "2026-08-07T01:14:27.457Z"
+    },
+    "bigquery-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/bigquery-basics/SKILL.md",
+      "skillFolderHash": "58a21dda4e3a747c7194b062b4023cd2934a6f3e",
+      "installedAt": "2026-08-07T01:14:27.460Z",
+      "updatedAt": "2026-08-07T01:14:27.460Z"
+    },
+    "bigquery-bigframes": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/bigquery-bigframes/SKILL.md",
+      "skillFolderHash": "8da39b04649af29a16950ca209431672f292d072",
+      "installedAt": "2026-08-07T01:14:27.462Z",
+      "updatedAt": "2026-08-07T01:14:27.462Z"
+    },
+    "bigtable-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/bigtable-basics/SKILL.md",
+      "skillFolderHash": "bb2f3b9612235ff28a5db85dd92e66e515ff3918",
+      "installedAt": "2026-08-07T01:14:27.463Z",
+      "updatedAt": "2026-08-07T01:14:27.463Z"
+    },
+    "cloud-logging-configuration-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-logging-configuration-basics/SKILL.md",
+      "skillFolderHash": "be0a8d5c47659c877534cd69843937bf93b55927",
+      "installedAt": "2026-08-07T01:14:27.464Z",
+      "updatedAt": "2026-08-07T01:14:27.464Z"
+    },
+    "cloud-logging-cross-project-configuration": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-logging-cross-project-configuration/SKILL.md",
+      "skillFolderHash": "0d3a4a8ae938ed6705ef6b7d06302e232003746d",
+      "installedAt": "2026-08-07T01:14:27.465Z",
+      "updatedAt": "2026-08-07T01:14:27.465Z"
+    },
+    "cloud-logging-query-generation": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-logging-query-generation/SKILL.md",
+      "skillFolderHash": "7ba0c375b47940001ca684e84f173bf9901b3ce9",
+      "installedAt": "2026-08-07T01:14:27.466Z",
+      "updatedAt": "2026-08-07T01:14:27.466Z"
+    },
+    "cloud-monitoring-chart-generation": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-monitoring-chart-generation/SKILL.md",
+      "skillFolderHash": "3d8b11756829135a6e8cf727a34a3a193fca3ae5",
+      "installedAt": "2026-08-07T01:14:27.469Z",
+      "updatedAt": "2026-08-07T01:14:27.469Z"
+    },
+    "cloud-monitoring-metric-selection": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-monitoring-metric-selection/SKILL.md",
+      "skillFolderHash": "7e43bc71c51b729274b121d114a032c4989579ae",
+      "installedAt": "2026-08-07T01:14:27.470Z",
+      "updatedAt": "2026-08-07T01:14:27.470Z"
+    },
+    "cloud-run-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-run-basics/SKILL.md",
+      "skillFolderHash": "088d9fb03e5140375823f49da4dc3ef2b6b24cc9",
+      "installedAt": "2026-08-07T01:14:27.472Z",
+      "updatedAt": "2026-08-07T01:14:27.472Z"
+    },
+    "cloud-sql-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/cloud-sql-basics/SKILL.md",
+      "skillFolderHash": "8f1465994b22a632dd70b44025b7f2339720532c",
+      "installedAt": "2026-08-07T01:14:27.473Z",
+      "updatedAt": "2026-08-07T01:14:27.473Z"
+    },
+    "datalineage-bigquery-asset-impact-analysis": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/datalineage-bigquery-asset-impact-analysis/SKILL.md",
+      "skillFolderHash": "14811dd6765550e6e19f68b1458cba2fb9900003",
+      "installedAt": "2026-08-07T01:14:27.475Z",
+      "updatedAt": "2026-08-07T01:14:27.475Z"
+    },
+    "datalineage-summary": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/datalineage-summary/SKILL.md",
+      "skillFolderHash": "4765c4b3f6db899128880e9c3b4f383d2f34df94",
+      "installedAt": "2026-08-07T01:14:27.476Z",
+      "updatedAt": "2026-08-07T01:14:27.476Z"
+    },
+    "detection-engineering-coverage-evaluation": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/detection-engineering-coverage-evaluation/SKILL.md",
+      "skillFolderHash": "f440898b952cd9fb08cdf69c5e3e3e546725213a",
+      "installedAt": "2026-08-07T01:14:27.477Z",
+      "updatedAt": "2026-08-07T01:14:27.477Z"
+    },
+    "developer-device-platform-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/developer-device-platform-basics/SKILL.md",
+      "skillFolderHash": "59f15cec3b1e433cd4c1ebe6978dd20603c3aa63",
+      "installedAt": "2026-08-07T01:14:27.478Z",
+      "updatedAt": "2026-08-07T01:14:27.478Z"
+    },
+    "firebase-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/firebase-basics/SKILL.md",
+      "skillFolderHash": "3b8e91dd3f24b511c92a23246bad949bbfe6fcae",
+      "installedAt": "2026-08-07T01:14:27.482Z",
+      "updatedAt": "2026-08-07T01:14:27.482Z"
+    },
+    "gcloud": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gcloud/SKILL.md",
+      "skillFolderHash": "4487ce06ac34e44019ca4f8e3aa46182d6b55f0b",
+      "installedAt": "2026-08-07T01:14:27.483Z",
+      "updatedAt": "2026-08-07T01:14:27.483Z"
+    },
+    "gemini-agents-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gemini-agents-api/SKILL.md",
+      "skillFolderHash": "c4d09f7fbaf86ea2165780b3688a7cb7dc2ff124",
+      "installedAt": "2026-08-07T01:14:27.484Z",
+      "updatedAt": "2026-08-07T01:14:27.484Z"
+    },
+    "gemini-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gemini-api/SKILL.md",
+      "skillFolderHash": "6ea29d11c287ad1a4b71f563330bb68bb7f7693e",
+      "installedAt": "2026-08-07T01:14:27.485Z",
+      "updatedAt": "2026-08-07T01:14:27.485Z"
+    },
+    "gemini-interactions-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gemini-interactions-api/SKILL.md",
+      "skillFolderHash": "dd32c84ba395df31967a15531665b1d8a4f8138d",
+      "installedAt": "2026-08-07T01:14:27.486Z",
+      "updatedAt": "2026-08-07T01:14:27.486Z"
+    },
+    "gemini-live-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gemini-live-api/SKILL.md",
+      "skillFolderHash": "0b491523665dc01c1525cbdeefa82ef9faf1100a",
+      "installedAt": "2026-08-07T01:14:27.487Z",
+      "updatedAt": "2026-08-07T01:14:27.487Z"
+    },
+    "gke-ai-troubleshooting-handle-disruption-gpu-tpu": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-ai-troubleshooting-handle-disruption-gpu-tpu/SKILL.md",
+      "skillFolderHash": "d744fbac462d6ac3a9d9ff99a6ce4e60118e0b4f",
+      "installedAt": "2026-08-07T01:14:27.488Z",
+      "updatedAt": "2026-08-07T01:14:27.488Z"
+    },
+    "gke-ai-troubleshooting-jobset-interruption": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-ai-troubleshooting-jobset-interruption/SKILL.md",
+      "skillFolderHash": "16a61a5588f497cc52833d3ca919d682f993e93f",
+      "installedAt": "2026-08-07T01:14:27.490Z",
+      "updatedAt": "2026-08-07T01:14:27.490Z"
+    },
+    "gke-ai-troubleshooting-tpu-vbar-oom": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-ai-troubleshooting-tpu-vbar-oom/SKILL.md",
+      "skillFolderHash": "a7120cf9107d7cc5103d29ac0df16f2511c401e5",
+      "installedAt": "2026-08-07T01:14:27.491Z",
+      "updatedAt": "2026-08-07T01:14:27.491Z"
+    },
+    "gke-app-onboarding": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-app-onboarding/SKILL.md",
+      "skillFolderHash": "492b452708a0bf75a6cb7be0afbdb5eae6a235ea",
+      "installedAt": "2026-08-07T01:14:27.492Z",
+      "updatedAt": "2026-08-07T01:14:27.492Z"
+    },
+    "gke-backup-dr": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-backup-dr/SKILL.md",
+      "skillFolderHash": "8a32c051b52502f0bcc25fefa0b6a2990686edce",
+      "installedAt": "2026-08-07T01:14:27.493Z",
+      "updatedAt": "2026-08-07T01:14:27.493Z"
+    },
+    "gke-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-basics/SKILL.md",
+      "skillFolderHash": "9ed35f22ac9572316b7927796439755627c1dcf0",
+      "installedAt": "2026-08-07T01:14:27.495Z",
+      "updatedAt": "2026-08-07T01:14:27.495Z"
+    },
+    "gke-batch-hpc": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-batch-hpc/SKILL.md",
+      "skillFolderHash": "0432f235a29c74a6999a05f39e01d0050dcd9ec4",
+      "installedAt": "2026-08-07T01:14:27.500Z",
+      "updatedAt": "2026-08-07T01:14:27.500Z"
+    },
+    "gke-cluster-autoscaler": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-cluster-autoscaler/SKILL.md",
+      "skillFolderHash": "f56ac7b6329d1735946910a6b94283e08553cb4d",
+      "installedAt": "2026-08-07T01:14:27.502Z",
+      "updatedAt": "2026-08-07T01:14:27.502Z"
+    },
+    "gke-cluster-creation": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-cluster-creation/SKILL.md",
+      "skillFolderHash": "3b2fe04c819e61d41f189a336f33549017f4e181",
+      "installedAt": "2026-08-07T01:14:27.503Z",
+      "updatedAt": "2026-08-07T01:14:27.503Z"
+    },
+    "gke-compute-classes": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-compute-classes/SKILL.md",
+      "skillFolderHash": "164dfa9ff0e371fbdaec0a891678972489573e4d",
+      "installedAt": "2026-08-07T01:14:27.508Z",
+      "updatedAt": "2026-08-07T01:14:27.508Z"
+    },
+    "gke-cost-analysis": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-cost-analysis/SKILL.md",
+      "skillFolderHash": "8ae8f04539d2bb9e1e6dbe7269700afe25c95d04",
+      "installedAt": "2026-08-07T01:14:27.510Z",
+      "updatedAt": "2026-08-07T01:14:27.510Z"
+    },
+    "gke-cost-optimization": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-cost-optimization/SKILL.md",
+      "skillFolderHash": "b7bef03bd4751b7979e76971e48b910a5c24711b",
+      "installedAt": "2026-08-07T01:14:27.516Z",
+      "updatedAt": "2026-08-07T01:14:27.516Z"
+    },
+    "gke-golden-path": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-golden-path/SKILL.md",
+      "skillFolderHash": "15fbc31b0bc6fa6b2cf931ed397ee642ddd33fbe",
+      "installedAt": "2026-08-07T01:14:27.518Z",
+      "updatedAt": "2026-08-07T01:14:27.518Z"
+    },
+    "gke-inference": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-inference/SKILL.md",
+      "skillFolderHash": "671ca22fab0531dd167927a1c2cd5718e7f8ae9e",
+      "installedAt": "2026-08-07T01:14:27.524Z",
+      "updatedAt": "2026-08-07T01:14:27.524Z"
+    },
+    "gke-manifest-generation": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-manifest-generation/SKILL.md",
+      "skillFolderHash": "151d2014584db7a2093bb9d692ca66584ea5d218",
+      "installedAt": "2026-08-07T01:14:27.526Z",
+      "updatedAt": "2026-08-07T01:14:27.526Z"
+    },
+    "gke-multitenancy": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-multitenancy/SKILL.md",
+      "skillFolderHash": "a94d75c1a0969064daa907e9dd38c6e88ee9918a",
+      "installedAt": "2026-08-07T01:14:27.530Z",
+      "updatedAt": "2026-08-07T01:14:27.530Z"
+    },
+    "gke-networking": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-networking/SKILL.md",
+      "skillFolderHash": "0ad9a5d02aafe11d308b1d804ff466dbcd041e35",
+      "installedAt": "2026-08-07T01:14:27.532Z",
+      "updatedAt": "2026-08-07T01:14:27.532Z"
+    },
+    "gke-observability": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-observability/SKILL.md",
+      "skillFolderHash": "74989f551b9a880b21c33e3c8fb839351126a0b0",
+      "installedAt": "2026-08-07T01:14:27.533Z",
+      "updatedAt": "2026-08-07T01:14:27.533Z"
+    },
+    "gke-platform-security": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-platform-security/SKILL.md",
+      "skillFolderHash": "6f515684510c02b7804f0b59c9897ca850501ff0",
+      "installedAt": "2026-08-07T01:14:27.536Z",
+      "updatedAt": "2026-08-07T01:14:27.536Z"
+    },
+    "gke-productionize": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-productionize/SKILL.md",
+      "skillFolderHash": "64512523e56e78c8c5102ac03a49ed64e9335450",
+      "installedAt": "2026-08-07T01:14:27.537Z",
+      "updatedAt": "2026-08-07T01:14:27.537Z"
+    },
+    "gke-reliability": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-reliability/SKILL.md",
+      "skillFolderHash": "5c997cfba034fee38bdc71367fe909c3029570ee",
+      "installedAt": "2026-08-07T01:14:27.538Z",
+      "updatedAt": "2026-08-07T01:14:27.538Z"
+    },
+    "gke-service-networking": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-service-networking/SKILL.md",
+      "skillFolderHash": "eba605b4d19fc88da748375120fe21f53b229072",
+      "installedAt": "2026-08-07T01:14:27.540Z",
+      "updatedAt": "2026-08-07T01:14:27.540Z"
+    },
+    "gke-storage": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-storage/SKILL.md",
+      "skillFolderHash": "005e9d48b9f1d8589942c8704686ba942051d2dd",
+      "installedAt": "2026-08-07T01:14:27.542Z",
+      "updatedAt": "2026-08-07T01:14:27.542Z"
+    },
+    "gke-tpu-metrics-monitoring": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-tpu-metrics-monitoring/SKILL.md",
+      "skillFolderHash": "3ddc777ef72000a7c66e5b2ee0d60da3624932fc",
+      "installedAt": "2026-08-07T01:14:27.543Z",
+      "updatedAt": "2026-08-07T01:14:27.543Z"
+    },
+    "gke-upgrades": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-upgrades/SKILL.md",
+      "skillFolderHash": "4df5d2d1fc4d6fb33ae868bfccbd46c3fe4ffa06",
+      "installedAt": "2026-08-07T01:14:27.545Z",
+      "updatedAt": "2026-08-07T01:14:27.545Z"
+    },
+    "gke-workload-scaling": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-workload-scaling/SKILL.md",
+      "skillFolderHash": "f16a5563784a095ddd937dec8c894217f274ae08",
+      "installedAt": "2026-08-07T01:14:27.546Z",
+      "updatedAt": "2026-08-07T01:14:27.546Z"
+    },
+    "gke-workload-security": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-workload-security/SKILL.md",
+      "skillFolderHash": "c5c62c488bdc46f993dd097ed74d99fec219cacb",
+      "installedAt": "2026-08-07T01:14:27.549Z",
+      "updatedAt": "2026-08-07T01:14:27.549Z"
+    },
+    "gke-workload-troubleshooting": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/gke-workload-troubleshooting/SKILL.md",
+      "skillFolderHash": "020bb86ff5b7bcd36bb72a484de8c9a21fc123a4",
+      "installedAt": "2026-08-07T01:14:27.550Z",
+      "updatedAt": "2026-08-07T01:14:27.550Z"
+    },
+    "google-agents-cli-onboarding": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-agents-cli-onboarding/SKILL.md",
+      "skillFolderHash": "c59bb2447cff7de552d994377dcdd4aeb97ceba1",
+      "installedAt": "2026-08-07T01:14:27.552Z",
+      "updatedAt": "2026-08-07T01:14:27.552Z"
+    },
+    "google-cloud-global-frontend-configuration": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-global-frontend-configuration/SKILL.md",
+      "skillFolderHash": "d842f05b1772b8f664d36621f678cafa02aa8b46",
+      "installedAt": "2026-08-07T01:14:27.553Z",
+      "updatedAt": "2026-08-07T01:14:27.553Z"
+    },
+    "google-cloud-networking-observability": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-networking-observability/SKILL.md",
+      "skillFolderHash": "512d03e5a8eb8ce27a5619788bd8219b35ff7d92",
+      "installedAt": "2026-08-07T01:14:27.554Z",
+      "updatedAt": "2026-08-07T01:14:27.554Z"
+    },
+    "google-cloud-recipe-auth": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-recipe-auth/SKILL.md",
+      "skillFolderHash": "a42449bc4dc3d411321e9aa63b8ea12c1e5eaa89",
+      "installedAt": "2026-08-07T01:14:27.556Z",
+      "updatedAt": "2026-08-07T01:14:27.556Z"
+    },
+    "google-cloud-recipe-foundation-builder": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-recipe-foundation-builder/SKILL.md",
+      "skillFolderHash": "3eb8095c122e8d9a78f4360a40221b9d7f2a302e",
+      "installedAt": "2026-08-07T01:14:27.557Z",
+      "updatedAt": "2026-08-07T01:14:27.557Z"
+    },
+    "google-cloud-recipe-onboarding": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-recipe-onboarding/SKILL.md",
+      "skillFolderHash": "2cbd6005aeb5689e716e3e8cde41ed630b3732ec",
+      "installedAt": "2026-08-07T01:14:27.560Z",
+      "updatedAt": "2026-08-07T01:14:27.560Z"
+    },
+    "google-cloud-slo-alert-configuration": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-slo-alert-configuration/SKILL.md",
+      "skillFolderHash": "c6bbde7fc47b40ad57424ef01585e6936e57a648",
+      "installedAt": "2026-08-07T01:14:27.561Z",
+      "updatedAt": "2026-08-07T01:14:27.561Z"
+    },
+    "google-cloud-solution-agentic-ai-bidirectional-streaming": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-agentic-ai-bidirectional-streaming/SKILL.md",
+      "skillFolderHash": "edab46f0a356d6c44d0ebdd4f9e99436b376b421",
+      "installedAt": "2026-08-07T01:14:27.563Z",
+      "updatedAt": "2026-08-07T01:14:27.563Z"
+    },
+    "google-cloud-solution-agentic-ai-borderless-data-lakehouse": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-agentic-ai-borderless-data-lakehouse/SKILL.md",
+      "skillFolderHash": "f6efa95ad1b679c104cc1e395fb2ee9a25de8beb",
+      "installedAt": "2026-08-07T01:14:27.564Z",
+      "updatedAt": "2026-08-07T01:14:27.564Z"
+    },
+    "google-cloud-solution-agentic-ai-data-science-workflow": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-agentic-ai-data-science-workflow/SKILL.md",
+      "skillFolderHash": "531f3a7844b976d22689def549ddae5bb08373f8",
+      "installedAt": "2026-08-07T01:14:27.566Z",
+      "updatedAt": "2026-08-07T01:14:27.566Z"
+    },
+    "google-cloud-solution-agentic-analytics-spark-knowledge-catalog": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-agentic-analytics-spark-knowledge-catalog/SKILL.md",
+      "skillFolderHash": "ee89dafca29ca973172ec07ee61fdf370b44a72d",
+      "installedAt": "2026-08-07T01:14:27.569Z",
+      "updatedAt": "2026-08-07T01:14:27.569Z"
+    },
+    "google-cloud-solution-architecture": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-architecture/SKILL.md",
+      "skillFolderHash": "6af0d262328cda1d34797a9f8374584850382c41",
+      "installedAt": "2026-08-07T01:14:27.572Z",
+      "updatedAt": "2026-08-07T01:14:27.572Z"
+    },
+    "google-cloud-solution-build-deploy-agents": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-build-deploy-agents/SKILL.md",
+      "skillFolderHash": "0e6a407c442f50ea7160bd85dcf84b4cccbe310c",
+      "installedAt": "2026-08-07T01:14:27.573Z",
+      "updatedAt": "2026-08-07T01:14:27.573Z"
+    },
+    "google-cloud-solution-guided-gke-ai-migration": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-guided-gke-ai-migration/SKILL.md",
+      "skillFolderHash": "a444d28d7bdf625d730aa7b4f441834eacce31ba",
+      "installedAt": "2026-08-07T01:14:27.575Z",
+      "updatedAt": "2026-08-07T01:14:27.575Z"
+    },
+    "google-cloud-solution-n-tier-serverless-web-app": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-n-tier-serverless-web-app/SKILL.md",
+      "skillFolderHash": "04c265e1af0ab311bbe4f76b24e8f22bb2998d43",
+      "installedAt": "2026-08-07T01:14:27.576Z",
+      "updatedAt": "2026-08-07T01:14:27.576Z"
+    },
+    "google-cloud-solution-rag-enterprise-search-gke-sqldb": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-solution-rag-enterprise-search-gke-sqldb/SKILL.md",
+      "skillFolderHash": "6ab38e326fe419ef809dfaaadd93b63a90bf5e89",
+      "installedAt": "2026-08-07T01:14:27.578Z",
+      "updatedAt": "2026-08-07T01:14:27.578Z"
+    },
+    "google-cloud-storage-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-storage-basics/SKILL.md",
+      "skillFolderHash": "69123294035a8f1a3b37f739386cd0a802eac8f8",
+      "installedAt": "2026-08-07T01:14:27.579Z",
+      "updatedAt": "2026-08-07T01:14:27.579Z"
+    },
+    "google-cloud-waf-cost-optimization": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-waf-cost-optimization/SKILL.md",
+      "skillFolderHash": "8d1c1ce958e572008abf13acf12aac302b93d0fc",
+      "installedAt": "2026-08-07T01:14:27.581Z",
+      "updatedAt": "2026-08-07T01:14:27.581Z"
+    },
+    "google-cloud-waf-operational-excellence": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-waf-operational-excellence/SKILL.md",
+      "skillFolderHash": "f8ffe15b00415ed462cc374de6db72db7bf2f60e",
+      "installedAt": "2026-08-07T01:14:27.583Z",
+      "updatedAt": "2026-08-07T01:14:27.583Z"
+    },
+    "google-cloud-waf-performance-optimization": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-waf-performance-optimization/SKILL.md",
+      "skillFolderHash": "a19f683a13ef83832572512253e986fe2f04adc2",
+      "installedAt": "2026-08-07T01:14:27.584Z",
+      "updatedAt": "2026-08-07T01:14:27.584Z"
+    },
+    "google-cloud-waf-reliability": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-waf-reliability/SKILL.md",
+      "skillFolderHash": "41d2ffe437eee60c61154ad5b35799855a99522a",
+      "installedAt": "2026-08-07T01:14:27.586Z",
+      "updatedAt": "2026-08-07T01:14:27.586Z"
+    },
+    "google-cloud-waf-security": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-waf-security/SKILL.md",
+      "skillFolderHash": "1cbbfc338ba6022e0574818babfdbdbae176320b",
+      "installedAt": "2026-08-07T01:14:27.587Z",
+      "updatedAt": "2026-08-07T01:14:27.587Z"
+    },
+    "google-cloud-waf-sustainability": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/google-cloud-waf-sustainability/SKILL.md",
+      "skillFolderHash": "fd7ed477c4f5acb4ca98910b85cf90dc3ffa31f0",
+      "installedAt": "2026-08-07T01:14:27.589Z",
+      "updatedAt": "2026-08-07T01:14:27.589Z"
+    },
+    "managed-airflow-migrations": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/managed-airflow-migrations/SKILL.md",
+      "skillFolderHash": "b47255c2b48533d8ed39339c0f97a8309c0ec6de",
+      "installedAt": "2026-08-07T01:14:27.590Z",
+      "updatedAt": "2026-08-07T01:14:27.590Z"
+    },
+    "spanner-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/spanner-basics/SKILL.md",
+      "skillFolderHash": "ca6054d39d5e398dcdcc2c9a86e2e7db5ef79a77",
+      "installedAt": "2026-08-07T01:14:27.593Z",
+      "updatedAt": "2026-08-07T01:14:27.593Z"
+    },
+    "workload-manager-basics": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google/skills.git",
+      "skillPath": "skills/cloud/workload-manager-basics/SKILL.md",
+      "skillFolderHash": "6441065afcbe34aa926e0cd90f98ba9a559034f5",
+      "installedAt": "2026-08-07T01:14:27.595Z",
+      "updatedAt": "2026-08-07T01:14:27.595Z"
+    }
+  },
+  "dismissed": {}
+}

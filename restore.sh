@@ -1,60 +1,59 @@
 #!/bin/bash
-# VPS 1-Line Restore Script
-# Usage: bash restore.sh <path_to_backup.tar.gz>
+# One-Click Disaster Recovery Script for MyProject
 
-set -e
+echo "========================================="
+echo "   Disaster Recovery: Restoring VPS      "
+echo "========================================="
 
-BACKUP_FILE="$1"
+# 1. Install dependencies
+echo "1. Installing basic dependencies (git, curl, tar, rclone)..."
+sudo apt-get update -qq && sudo apt-get install -y -qq git curl tar rclone nodejs npm python3 > /dev/null
 
-if [ -z "$BACKUP_FILE" ]; then
-    # Look for any vps_backup tarball in current directory or /tmp
-    BACKUP_FILE=$(find . /tmp /root -name "vps_backup_*.tar.gz" 2>/dev/null | head -n 1)
+# 2. Setup rclone configuration
+echo "2. Setting up Google Drive authentication..."
+mkdir -p ~/.config/rclone /home/ubuntu/.config/rclone
+if [ ! -f ~/.config/rclone/rclone.conf ]; then
+    if [ -n "$RCLONE_TOKEN" ]; then
+        cat << EOF > ~/.config/rclone/rclone.conf
+[gdrive]
+type = drive
+scope = drive
+token = $RCLONE_TOKEN
+EOF
+    else
+        echo "WARNING: ~/.config/rclone/rclone.conf not found."
+        echo "Please ensure rclone is configured or set RCLONE_TOKEN."
+    fi
 fi
+cp ~/.config/rclone/rclone.conf /home/ubuntu/.config/rclone/rclone.conf 2>/dev/null || true
 
-if [ -z "$BACKUP_FILE" ] || [ ! -f "$BACKUP_FILE" ]; then
-    echo "❌ Error: Backup file not found!"
-    echo "Usage: bash restore.sh <path_to_vps_backup.tar.gz>"
+# 3. Find latest backup from Google Drive
+echo "3. Searching latest backup archive in Google Drive..."
+LATEST_BACKUP=$(rclone lsf gdrive:Backup_Server_MyProject --files-only | sort -r | head -n 1)
+
+if [ -z "$LATEST_BACKUP" ]; then
+    echo "ERROR: No backup archive found in gdrive:Backup_Server_MyProject!"
     exit 1
 fi
 
-echo "🚀 Starting 1-Line VPS Restore from: $BACKUP_FILE"
+echo "Found latest backup: $LATEST_BACKUP"
+echo "4. Downloading backup file..."
+rclone copy "gdrive:Backup_Server_MyProject/$LATEST_BACKUP" /tmp/ --tpslimit 10
 
-# 1. Install Essential Dependencies
-echo "📦 Installing system dependencies (Python3, Node.js, Git, Curl)..."
-apt-get update -qq
-apt-get install -y -qq python3 python3-pip python3-venv git curl tar
+# 4. Extract archive
+echo "5. Extracting projects and data..."
+tar -xzf "/tmp/$LATEST_BACKUP" -C /
 
-if ! command -v node &> /dev/null; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y -qq nodejs
-fi
+# 5. Fix symlinks and permissions
+mkdir -p /home/ubuntu
+ln -sfn /root/MyProject /home/ubuntu/MyProject 2>/dev/null
+rm -f "/tmp/$LATEST_BACKUP"
 
-if ! command -v wrangler &> /dev/null; then
-    npm install -g wrangler &> /dev/null || true
-fi
+# 6. Re-enable Cron
+echo "6. Restoring automated daily cron job..."
+(crontab -l 2>/dev/null | grep -v 'run_all_backups.sh'; echo "0 2 * * * /bin/bash /root/run_all_backups.sh > /root/backup.log 2>&1") | crontab -
 
-# 2. Extract Backup Archive to /root
-echo "📂 Restoring files and configurations..."
-tar -xzf "$BACKUP_FILE" -C /root
-
-# 3. Restore Permissions & Executables
-chmod +x /root/telegram_bot.py /root/backup_vps.sh /root/restore.sh 2>/dev/null || true
-chmod +x /root/.local/bin/agy 2>/dev/null || true
-
-# 4. Setup Systemd Service
-if [ -f "/etc/systemd/system/antigravity-bot.service" ]; then
-    echo "⚙️ Configuring systemd service..."
-    systemctl daemon-reload
-    systemctl enable antigravity-bot.service
-    systemctl restart antigravity-bot.service
-fi
-
-# 5. Environment & Bashrc Refresh
-echo 'alias agy="agy --dangerously-skip-permissions"' >> /root/.bashrc 2>/dev/null || true
-
-echo ""
-echo "🎉 ================================================= 🎉"
-echo "✅ VPS RESTORE COMPLETED SUCCESSFULLY!"
-echo "🤖 Telegram Bot (@Kontrolagybot) is running & active!"
-echo "⚡ Antigravity CLI (agy) is configured and ready!"
-echo "🎉 ================================================= 🎉"
+echo "========================================="
+echo "  SUCCESS! RESTORE COMPLETED IN MINUTES. "
+echo "  All projects restored at: /root/MyProject"
+echo "========================================="
