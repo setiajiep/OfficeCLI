@@ -343,7 +343,6 @@ def render_model_picker(user_id):
         btns.append([{"text": btn_label, "callback_data": f"set_model:{m['id']}"}])
 
     btns.append([{"text": "❌ Tutup", "callback_data": "close_msg"}])
-    btns.append([{"text": "❌ Tutup", "callback_data": "close_msg"}])
     reply_markup = {"inline_keyboard": btns}
     return text, reply_markup
 
@@ -1291,6 +1290,58 @@ def process_callback_query(cq):
         send_message(chat_id, help_txt, parse_mode="Markdown")
         return
 
+    if data.startswith("faceless_gen:"):
+        niche_arg = data.split("faceless_gen:", 1)[1]
+        answer_callback_query(cq_id, "🎬 Mempersiapkan video...")
+
+        def _faceless_render(niche, batch=False):
+            try:
+                if "/home/ubuntu/faceless_creator_engine" not in sys.path:
+                    sys.path.insert(0, "/home/ubuntu/faceless_creator_engine")
+                if "/home/ubuntu/faceless_creator_engine/venv/lib/python3.10/site-packages" not in sys.path:
+                    sys.path.insert(0, "/home/ubuntu/faceless_creator_engine/venv/lib/python3.10/site-packages")
+                from content_generator import ContentGenerator
+                from video_renderer import VideoRenderer
+
+                count = 3 if batch else 1
+                lang = niche if niche in ["id", "en"] else (["id", "en"][int(time.time()) % 2])
+                cg = ContentGenerator(lang)
+                quizzes = cg.get_batch_quizzes(count) if batch else [cg.get_random_quiz()]
+
+                hashtags_id = "#shorts #quiz #faktaunik #asaotak #edukasi #viral #fyp #indonesia"
+                hashtags_en = "#shorts #facts #mindblowing #science #trivia #viral #fyp #quiz"
+
+                for i, quiz in enumerate(quizzes):
+                    ts = int(time.time())
+                    fn = f"tg_short_{lang}_{ts}_{i}.mp4"
+                    try:
+                        renderer = VideoRenderer()
+                        out_p = renderer.render_quiz_video(quiz, fn)
+                        hashtags = hashtags_id if lang == "id" else hashtags_en
+                        caption = (
+                            f"🎯 <b>{quiz.get('question')}</b>\n\n"
+                            f"💡 <b>{quiz.get('answer_text')}</b>\n"
+                            f"📝 <i>{quiz.get('explanation')}</i>\n\n"
+                            f"{hashtags}"
+                        )
+                        send_video(chat_id, out_p, caption=caption)
+                        if batch and i < len(quizzes) - 1:
+                            time.sleep(2)
+                    except Exception as e_inner:
+                        send_message(chat_id, f"❌ Video {i+1} gagal: {e_inner}")
+
+                if batch:
+                    send_message(chat_id, f"✅ <b>Batch selesai! {len(quizzes)} video {lang.upper()} berhasil dikirim!</b>\n💡 Siap upload ke YouTube Shorts / TikTok / Reels!", parse_mode="HTML")
+            except Exception as err:
+                send_message(chat_id, f"❌ Gagal merender video Shorts: {err}")
+
+        is_batch = (niche_arg == "batch")
+        actual_niche = "id" if is_batch else niche_arg
+        status_msg = "📦 Membuat <b>3 video batch</b>" if is_batch else f"🎬 Merender video <b>{'Indonesia 🇮🇩' if actual_niche=='id' else ('English 🇺🇸' if actual_niche=='en' else 'Random')}</b>"
+        send_message(chat_id, f"{status_msg} Faceless Shorts... (±15-30 detik)", parse_mode="HTML")
+        threading.Thread(target=_faceless_render, args=(actual_niche, is_batch)).start()
+        return
+
     if data.startswith("fm_cd:"):
         parts = data.split("fm_cd:", 1)[1].split(":")
         target_key = parts[0]
@@ -1983,7 +2034,9 @@ def setup_bot_commands():
         {"command": "b64d",      "description": "🔓 Decode Base64 ke Teks"},
         {"command": "wc",        "description": "📝 Hitung Kata & Karakter"},
         {"command": "closemenu", "description": "🙈 Sembunyikan Tombol Menu"},
-        {"command": "help",      "description": "❓ Panduan Lengkap Penggunaan Bot"}
+        {"command": "help",      "description": "❓ Panduan Lengkap Penggunaan Bot"},
+        {"command": "quizstatus", "description": "📚 Status Database Quiz & Jumlah Soal"},
+        {"command": "updatequiz", "description": "🔄 Update Database Quiz via AGY AI (manual trigger)"}
     ]
     api_request("setMyCommands", {"commands": commands})
 
@@ -2000,8 +2053,8 @@ def get_main_menu_keyboard():
             [{"text": "⚡ Top Proses"}, {"text": "🛠️ Layanan"}],
             # ── Baris 4: Tools & Download ──
             [{"text": "💻 Jalankan Bash"}, {"text": "📦 Backup VPS"}],
-            [{"text": "🎬 Unduh Video"}, {"text": "🎵 Unduh MP3"}],
-            [{"text": "🌐 Baca Web"}, {"text": "📲 QR Code"}],
+            [{"text": "⚡ Faceless Shorts"}, {"text": "🎬 Unduh Video"}],
+            [{"text": "🎵 Unduh MP3"}, {"text": "🌐 Baca Web"}],
             # ── Baris 5: Utilitas ──
             [{"text": "🔗 Short URL"}, {"text": "📡 Ping Host"}],
             [{"text": "🌍 Info IP"}, {"text": "🌤️ Cuaca"}],
@@ -2427,6 +2480,31 @@ def process_update(update):
 
     if text in menu_triggers or text.lower() in menu_triggers:
         delete_message(chat_id, message["message_id"])
+
+    if text in ["⚡ Faceless Shorts", "/faceless", "/shorts", "/quiz"]:
+        faceless_menu = {
+            "inline_keyboard": [
+                [
+                    {"text": "🇮🇩 Quiz Bahasa Indonesia", "callback_data": "faceless_gen:id"},
+                    {"text": "🇺🇸 Science Facts (English)", "callback_data": "faceless_gen:en"}
+                ],
+                [
+                    {"text": "🎲 Random (ID atau EN)", "callback_data": "faceless_gen:random"},
+                    {"text": "📦 Batch 3 Video Sekaligus", "callback_data": "faceless_gen:batch"}
+                ],
+                [{"text": "❌ Batal", "callback_data": "close_msg"}]
+            ]
+        }
+        send_message(chat_id,
+            "⚡ <b>FACELESS CREATOR ENGINE</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "🎬 Pilih jenis konten Shorts yang ingin dibuat:\n\n"
+            "🇮🇩 <b>Quiz Indonesia</b> — Trivia viral Bahasa Indonesia\n"
+            "🇺🇸 <b>English Facts</b> — Mind-blowing science facts\n"
+            "🎲 <b>Random</b> — Pilih acak antara ID/EN\n"
+            "📦 <b>Batch 3x</b> — Generate 3 video sekaligus!",
+            reply_markup=faceless_menu, parse_mode="HTML")
+        return
 
     if text in ["/model", "/models", "/selectmodel", "🤖 Pilih Model AI", "🎯 Pilih Model AI"]:
         msg_text, reply_markup = render_model_picker(user_id)
@@ -2894,6 +2972,51 @@ def process_update(update):
         return
 
 
+    # /quizstatus - Status database quiz
+    if text in ["/quizstatus", "/dbquiz", "/quizdb"]:
+        try:
+            sys.path.insert(0, "/home/ubuntu/faceless_creator_engine")
+            sys.path.insert(0, "/home/ubuntu/faceless_creator_engine/venv/lib/python3.10/site-packages")
+            from content_generator import get_db_stats
+            stats = get_db_stats()
+            msg = (
+                "📚 <b>STATUS DATABASE QUIZ</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🇮🇩 Soal Indonesia: <b>{stats['total_id']}</b>\n"
+                f"🇺🇸 Soal English:   <b>{stats['total_en']}</b>\n"
+                f"🎯 Total: <b>{stats['total_id'] + stats['total_en']} soal</b>\n\n"
+                f"🕒 Last Updated: <code>{stats['last_updated']}</code>\n"
+                f"📁 Source: <code>{stats['source']}</code>\n\n"
+                "🔄 Update otomatis setiap <b>3 hari</b> via cron\n"
+                "💡 Ketik /updatequiz untuk update manual"
+            )
+            send_message(chat_id, msg, parse_mode="HTML")
+        except Exception as e:
+            send_message(chat_id, f"❌ Error baca DB: {e}")
+        return
+
+    # /updatequiz - Manual trigger update database quiz
+    if text in ["/updatequiz", "/refreshquiz"]:
+        send_message(chat_id,
+            "🔄 <b>Memulai update database quiz via AGY AI...</b>\n"
+            "⏳ Proses ini membutuhkan 2-5 menit.\n"
+            "📲 Kamu akan dapat notifikasi saat selesai!",
+            parse_mode="HTML")
+        def _run_updater():
+            try:
+                import subprocess as _sp
+                result = _sp.run(
+                    ["python3", "/home/ubuntu/faceless_creator_engine/quiz_updater.py"],
+                    capture_output=True, text=True, timeout=360
+                )
+                if result.returncode != 0:
+                    send_message(chat_id, f"⚠️ Updater exit {result.returncode}:\n<code>{result.stderr[:500]}</code>", parse_mode="HTML")
+            except Exception as e_upd:
+                send_message(chat_id, f"❌ Error jalankan updater: {e_upd}")
+        import threading as _thr
+        _thr.Thread(target=_run_updater, daemon=True).start()
+        return
+
     # ================================================================
     # FITUR CANGGIH TAMBAHAN (extra_features.py)
     # ================================================================
@@ -3054,7 +3177,7 @@ def process_update(update):
             return
 
     # ================================================================
-        # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
+    # Regular prompt -> Run AGY with Photo Editor & Office capabilities!
     session_mode = get_session_mode(user_id)
     status_text = format_processing_status(text, current_cwd, session_mode, get_user_model(user_id))
     res_msg = send_message(chat_id, status_text, parse_mode="HTML")
@@ -3066,14 +3189,35 @@ def process_update(update):
 def main():
     lock_file_path = "/tmp/telegram_bot.lock"
     try:
-        global _instance_lock_file
-        _instance_lock_file = open(lock_file_path, "w")
-        fcntl.flock(_instance_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        _instance_lock_file.write(str(os.getpid()))
-        _instance_lock_file.flush()
-    except IOError:
-        print("❌ Error: Process Telegram Bot lain sedang berjalan! Menghentikan proses kedua.", file=sys.stderr)
-        sys.exit(1)
+        # PID-based lock: cek apakah PID di lockfile masih berjalan
+        if os.path.exists(lock_file_path):
+            try:
+                with open(lock_file_path, "r") as lf:
+                    old_pid = int(lf.read().strip())
+                # Cek apakah PID masih aktif
+                os.kill(old_pid, 0)
+                # PID masih hidup dan bukan diri sendiri
+                if old_pid != os.getpid():
+                    print(f"❌ Error: Bot sudah berjalan di PID {old_pid}. Menghentikan.", file=sys.stderr)
+                    sys.exit(1)
+            except (ValueError, ProcessLookupError, PermissionError):
+                # PID sudah tidak ada, lock file stale — hapus dan lanjut
+                os.remove(lock_file_path)
+
+        with open(lock_file_path, "w") as lf:
+            lf.write(str(os.getpid()))
+        
+        import atexit
+        def _cleanup_lock():
+            try:
+                if os.path.exists(lock_file_path):
+                    os.remove(lock_file_path)
+            except Exception:
+                pass
+        atexit.register(_cleanup_lock)
+
+    except Exception as e:
+        print(f"⚠️ Lock check error (continuing): {e}", file=sys.stderr)
 
     print("🚀 Antigravity Telegram Office & Photo Editor Active...")
     print("Bot Username: @Kontrolagybot")

@@ -1,0 +1,45 @@
+=========================================
+Starting Master Backup & Sync Sat Aug  8 02:00:01 AM WIB 2026
+=========================================
+--- Step 1: Running Archive Backup ---
+=== Starting Backup: 2026-08-08_020001 ===
+Archive created: /tmp/backup_work/MyProject_backup_2026-08-08_020001.tar.gz
+-rw-r--r-- 1 root root 339M Aug  8 02:00 /tmp/backup_work/MyProject_backup_2026-08-08_020001.tar.gz
+Uploading to Google Drive (gdrive:Backup_Server_MyProject)...
+SUCCESS: Upload completed.
+Cleaning up backups older than 14 days on Google Drive...
+=== Backup Finished Successfully: 2026-08-08_020001 ===
+--- Step 2: Running Live Folder Sync ---
+=== Starting Direct Folder Sync to Google Drive ===
+2026/08/08 02:01:08 Failed to create file system for "gdrive:MyProject_LiveSync": couldn't find root directory ID: googleapi: Error 403: Quota exceeded for quota metric 'Queries' and limit 'Queries per minute' of service 'drive.googleapis.com' for consumer 'project_number:202264815644'.
+Details:
+[
+  {
+    "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+    "domain": "googleapis.com",
+    "metadata": {
+      "consumer": "projects/202264815644",
+      "quota_limit": "defaultPerMinutePerProject",
+      "quota_limit_value": "840000",
+      "quota_location": "global",
+      "quota_metric": "drive.googleapis.com/default",
+      "quota_unit": "1/min/{project}",
+      "service": "drive.googleapis.com"
+    },
+    "reason": "RATE_LIMIT_EXCEEDED"
+  },
+  {
+    "@type": "type.googleapis.com/google.rpc.Help",
+    "links": [
+      {
+        "description": "Request a higher quota limit.",
+        "url": "https://cloud.google.com/docs/quotas/help/request_increase"
+      }
+    ]
+  }
+]
+, rateLimitExceeded
+ERROR: Sync failed!
+=========================================
+Master Backup & Sync Completed Successfully!
+=========================================
